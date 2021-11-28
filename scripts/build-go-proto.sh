@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+# TODO: generate golang proto compl. to pkg/... from api/...

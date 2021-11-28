@@ -1,0 +1,20 @@
+# TODO: test docker file / or something with KO
+FROM bitnami/golang:1.17 as builder
+
+LABEL maintainer="Leonard Vincent Simon Pahlke <l.pahlke@reply.de>"
+
+WORKDIR /app/acs-cl2-shipper-container
+
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+COPY . .
+
+RUN pwd && ls -ltr
+
+RUN ["apt-get", "update"]
+RUN ["apt-get", "install", "-y", "vim"]
+
+# Command to run the executable
+ENTRYPOINT ["make", "verify"] 
