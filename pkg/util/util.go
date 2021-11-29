@@ -21,9 +21,12 @@ func SetViperCfg(configName string, setViperDefaults func()) {
 	setViperDefaults()
 	// bind flags
 	pflag.Parse()
-	viper.BindPFlags(pflag.CommandLine)
+	err := viper.BindPFlags(pflag.CommandLine)
+	if err != nil {
+		panic(fmt.Errorf("fatal error binding flags: %w", err))
+	}
 	// read config
-	err := viper.ReadInConfig()
+	err = viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
@@ -32,14 +35,14 @@ func SetViperCfg(configName string, setViperDefaults func()) {
 // GetArticleID used to get a identifier that is used to store article information
 //  The ID is sourced from the newspaper which has a unique identifier to distinguish between articles
 //  Newspaper is the newspaper string
-func GetArticleID(ID ArticleID, newspaper Newspaper) string {
-	return fmt.Sprintf("%s-%s", newspaper, ID)
+func GetArticleID(id ArticleID, newspaper Newspaper) string {
+	return fmt.Sprintf("%s-%s", newspaper, id)
 }
 
 // Newspaper name
 type Newspaper string
 
-// ArticleID the ID that has been given by the newspaper
+// ArticleID the Id that has been given by the newspaper
 type ArticleID string
 
 // GetLogger this function is used to get a logger which is used to produce log outputs

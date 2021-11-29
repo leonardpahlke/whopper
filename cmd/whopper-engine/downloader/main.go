@@ -43,6 +43,7 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 			},
 		}, err
 	}
+	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return &api.DownloadResponse{
@@ -97,7 +98,7 @@ func main() {
 	// net listen
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", viper.GetInt("Port")))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logger.Fatalw("failed to listen", "error", err)
 	}
 
 	// create new gRPC server
@@ -106,9 +107,9 @@ func main() {
 		daprClient: client,
 		logger:     util.GetLogger(zap.DebugLevel),
 	})
-	log.Printf("server listening at %v", lis.Addr())
+	logger.Infow("server is listening", "address", lis.Addr())
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		logger.Fatalw("failed to server", "error", err)
 	}
 }
 
