@@ -1,8 +1,4 @@
 *.txt
-/tmp
-/tmp-backup
-./.vscode
-/.vscode
 coverage.html
 coverage.out
 
