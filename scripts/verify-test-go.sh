@@ -20,5 +20,5 @@ done
 # REPO_ROOT=$(git rev-parse --show-toplevel)
 cd $(pwd)
 
-GO111MODULE=on go test -timeout="${TEST_TIMEOUT}s" -count=1 -cover -coverprofile coverage.out $(go list ./... )
-go tool cover -html ./coverage.out -o ./coverage.html
+GO111MODULE=on go test -timeout="${TEST_TIMEOUT}s" -count=1 -cover -coverprofile ./build/coverage.out $(go list ./... )
+go tool cover -html ./build/coverage.out -o ./build/coverage.html

@@ -59,20 +59,15 @@ service Downloader {
 //  the additional information, id and newspaper is used to async match the request
 message DownloadRequest {
   string id = 1;
-  string newspaper = 2;
-  string url = 3;
+  string url = 2;
 }
 message DownloadResponse {
   // request id / article id
   string id = 1;
-  // newspaper reference that has been used in the request
-  string newspaper = 2;
   // html website data
-  bytes data = 3;
-  // path where to find the data (data base query)
-  string data_path = 4;
+  bytes data = 2;
   // response head
-  Head head = 5;
+  Head head = 3;
 }
 
 // Parser

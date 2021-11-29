@@ -32,19 +32,6 @@ func SetViperCfg(configName string, setViperDefaults func()) {
 	}
 }
 
-// GetArticleID used to get a identifier that is used to store article information
-//  The ID is sourced from the newspaper which has a unique identifier to distinguish between articles
-//  Newspaper is the newspaper string
-func GetArticleID(id ArticleID, newspaper Newspaper) string {
-	return fmt.Sprintf("%s-%s", newspaper, id)
-}
-
-// Newspaper name
-type Newspaper string
-
-// ArticleID the Id that has been given by the newspaper
-type ArticleID string
-
 // GetLogger this function is used to get a logger which is used to produce log outputs
 func GetLogger(lvl zapcore.Level) *zap.SugaredLogger {
 	cfg := zap.Config{

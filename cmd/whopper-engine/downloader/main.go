@@ -34,8 +34,7 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 	resp, err := http.Get(in.Url)
 	if err != nil {
 		return &api.DownloadResponse{
-			Id:        in.Id,
-			Newspaper: in.Newspaper,
+			Id: in.Id,
 			Head: &api.Head{
 				Status:        api.Status_ERROR,
 				StatusMessage: errors.Wrap(err, "http request error").Error(),
@@ -47,8 +46,7 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return &api.DownloadResponse{
-			Id:        in.Id,
-			Newspaper: in.Newspaper,
+			Id: in.Id,
 			Head: &api.Head{
 				Status:        api.Status_ERROR,
 				StatusMessage: errors.Wrap(err, "could not read http response body").Error(),
@@ -58,11 +56,10 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 	}
 
 	// store data to database
-	err = s.daprClient.SaveState(ctx, viper.GetString("DaprStoreName"), util.GetArticleID(util.ArticleID(in.Id), util.Newspaper(in.Newspaper)), body)
+	err = s.daprClient.SaveState(ctx, viper.GetString("DaprStoreName"), in.Id, body)
 	if err != nil {
 		return &api.DownloadResponse{
-			Id:        in.Id,
-			Newspaper: in.Newspaper,
+			Id: in.Id,
 			Head: &api.Head{
 				Status:        api.Status_ERROR,
 				StatusMessage: errors.Wrap(err, "could not save data to remote storage").Error(),
@@ -73,10 +70,8 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 
 	// response
 	return &api.DownloadResponse{
-		Id:        in.Id,
-		Newspaper: in.Newspaper,
-		Data:      body,
-		DataPath:  "",
+		Id:   in.Id,
+		Data: body,
 		Head: &api.Head{
 			Status:        api.Status_OK,
 			StatusMessage: "data downloaded and stored",
