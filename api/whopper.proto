@@ -52,9 +52,9 @@ message Head {
 //
 
 // Downloader
-service Downloader {
-  rpc Download (DownloadRequest) returns (DownloadResponse) {}
-}
+// service Downloader {
+//   rpc Download (DownloadRequest) returns (DownloadResponse) {}
+// }
 //  INFO: only the URL is needed to download resources from a website
 //  the additional information, id and newspaper is used to async match the request
 message DownloadRequest {

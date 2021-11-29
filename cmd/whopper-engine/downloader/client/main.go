@@ -6,11 +6,14 @@ import (
 	"context"
 	"time"
 
+	v1 "github.com/dapr/dapr/pkg/proto/common/v1"
+	pb "github.com/dapr/go-sdk/dapr/proto/runtime/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
-	address = "localhost:39429"
+	address = "localhost:38889"
 )
 
 func main() {
@@ -24,17 +27,23 @@ func main() {
 		logger.Fatalw("did not connect", "error", err)
 	}
 	defer conn.Close()
-	c := api.NewDownloaderClient(conn)
+	c := pb.NewAppCallbackClient(conn)
 
 	// Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r, err := c.Download(ctx, &api.DownloadRequest{
+	any := anypb.Any{}
+	any.MarshalFrom(&api.DownloadRequest{
 		Id:  "sample-id",
 		Url: "https://example.com",
 	})
+	r, err := c.OnInvoke(ctx, &v1.InvokeRequest{
+		Method: "Download",
+		Data:   &any,
+	})
+
 	if err != nil {
 		logger.Fatalw("could not perform download request", "error", err)
 	}
-	logger.Infow("received response", "response", r, "response data length", len(r.Data))
+	logger.Infow("received response", "response", r, "response data length", len(r.Data.Value))
 }
