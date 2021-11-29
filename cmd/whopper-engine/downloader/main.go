@@ -11,6 +11,10 @@ import (
 	"net/http"
 
 	dapr "github.com/dapr/go-sdk/client"
+	commonv1pb "github.com/dapr/go-sdk/dapr/proto/common/v1"
+	pb "github.com/dapr/go-sdk/dapr/proto/runtime/v1"
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -24,6 +28,7 @@ type server struct {
 	logger     *zap.SugaredLogger
 	daprClient dapr.Client
 	api.UnimplementedDownloaderServer
+	pb.UnimplementedAppCallbackServer
 }
 
 // Download implements api.DownloaderServer
@@ -106,6 +111,40 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		logger.Fatalw("failed to server", "error", err)
 	}
+}
+
+// This method gets invoked when a remote service has called the app through Dapr
+// The payload carries a Method to identify the method, a set of metadata properties and an optional payload
+// see: https://docs.dapr.io/developing-applications/integrations/grpc-integration/
+func (s *server) OnInvoke(ctx context.Context, in *commonv1pb.InvokeRequest) (*commonv1pb.InvokeResponse, error) {
+	var response *api.DownloadResponse
+	downloadRequest := api.DownloadRequest{}
+	err := in.Data.UnmarshalTo(downloadRequest.ProtoReflect().Interface())
+	if err != nil {
+		s.logger.Fatalw("could not unmarshal request", "input data", string(in.Data.Value))
+	}
+
+	if in.Method != "Download" {
+		s.logger.Fatalw("unrecognized invoke method", "input method", string(in.Method))
+	}
+
+	response, err = s.UnimplementedDownloaderServer.Download(ctx, &downloadRequest)
+	if err != nil {
+		s.logger.Errorw("download error occurred", "error", err)
+	}
+
+	return &commonv1pb.InvokeResponse{
+		ContentType: "text/plain; charset=UTF-8",
+		Data:        &any.Any{Value: response.GetData()},
+	}, nil
+}
+
+// Dapr will call this method to get the list of bindings the app will get invoked by. In this example, we are telling Dapr
+// To invoke our app with a binding named storage
+func (s *server) ListInputBindings(ctx context.Context, in *empty.Empty) (*pb.ListInputBindingsResponse, error) {
+	return &pb.ListInputBindingsResponse{
+		Bindings: []string{"storage"},
+	}, nil
 }
 
 func init() {
