@@ -2,6 +2,7 @@ package main
 
 import (
 	"climatewhopper/pkg/api"
+	"climatewhopper/pkg/util"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -9,14 +10,19 @@ import (
 	"net"
 	"net/http"
 
+	dapr "github.com/dapr/go-sdk/client"
 	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // server is used to implement helloworld.GreeterServer.
 type server struct {
+	logger     *zap.SugaredLogger
+	daprClient dapr.Client
 	api.UnimplementedDownloaderServer
 }
 
@@ -50,9 +56,21 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 		}, err
 	}
 
-	// TODO: store data to remote storage
-	// ...
+	// store data to database
+	err = s.daprClient.SaveState(ctx, viper.GetString("DaprStoreName"), util.GetArticleID(util.ArticleID(in.Id), util.Newspaper(in.Newspaper)), body)
+	if err != nil {
+		return &api.DownloadResponse{
+			Id:        in.Id,
+			Newspaper: in.Newspaper,
+			Head: &api.Head{
+				Status:        api.Status_ERROR,
+				StatusMessage: errors.Wrap(err, "could not save data to remote storage").Error(),
+				Timestamp:     timestamppb.Now(),
+			},
+		}, err
+	}
 
+	// response
 	return &api.DownloadResponse{
 		Id:        in.Id,
 		Newspaper: in.Newspaper,
@@ -67,12 +85,27 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 }
 
 func main() {
+	logger := util.GetLogger(util.MatchLogLevel(util.WrapLogLevel(viper.GetString("LogLevel"))))
+
+	// create dapr client
+	client, err := dapr.NewClient()
+	if err != nil {
+		logger.Panicw("could not create dapr client", "error", err)
+	}
+	defer client.Close()
+
+	// net listen
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", viper.GetInt("Port")))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
+	// create new gRPC server
 	s := grpc.NewServer()
-	api.RegisterDownloaderServer(s, &server{})
+	api.RegisterDownloaderServer(s, &server{
+		daprClient: client,
+		logger:     util.GetLogger(zap.DebugLevel),
+	})
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
@@ -80,17 +113,12 @@ func main() {
 }
 
 func init() {
-	// set config meta
-	viper.SetConfigName("downloader")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./climate-whopper/configs")
-	viper.AddConfigPath("$HOME/climate-whopper/configs")
-	viper.AddConfigPath("./configs")
-	// set config defaults
-	viper.SetDefault("Port", 50051)
-	// read config
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %w", err))
-	}
+	util.SetViperCfg("downloader", func() {
+		// set config defaults
+		viper.SetDefault("Port", 50051)
+		viper.SetDefault("DaprStoreName", "statestore")
+		viper.SetDefault("LogLevel", util.Debug)
+		// set flags
+		pflag.Bool("test", false, "testmode")
+	})
 }
