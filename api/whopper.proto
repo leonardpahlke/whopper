@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/leonardpahlke/climate-whopper;climate_whopper";
+
+//
+//
+// GENERAL PORPUSE STUFF
+//
+//
+
+
+// Status request processing
+enum Status {
+  // 200 expected behaviour
+  OK = 0;
+  // 500 could not process but archive error trace
+  ERROR = 1;
+  // 200 unexpected events occured during processing but no errors
+  WARNING = 2;
+  // 400 faulty invoke information provided
+  INVALID = 3;
+}
+
+message Head {
+  // status of the request
+  Status status = 1;
+  // additional information about the status, like - status:"OK" status_message:"website resources have been downloaded and stored successful"
+  string status_message = 2;
+  // timestamp like "1972-01-01T10:00:20.021Z"
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+
+//
+//
+// gRPC API's
+// 1. Whopper-Controller
+// 2. Whopper-Engine
+
+
+//
+// 1. Whopper Controller
+//
+
+// TODO: ...
+
+
+//
+// 2. Whopper Engine
+//
+
+// Downloader
+service Downloader {
+  rpc Download (DownloadRequest) returns (DownloadResponse) {}
+}
+//  INFO: only the URL is needed to download resources from a website
+//  the additional information, id and newspaper is used to async match the request
+message DownloadRequest {
+  string id = 1;
+  string newspaper = 2;
+  string url = 3;
+}
+message DownloadResponse {
+  // request id / article id
+  string id = 1;
+  // newspaper reference that has been used in the request
+  string newspaper = 2;
+  // html website data
+  bytes data = 3;
+  // path where to find the data (data base query)
+  string data_path = 4;
+  // response head
+  Head head = 5;
+}
+
+// Parser
+//  ...
+
+// Translator
+//  ...
+
+// Analyzer
+//  ...
+
+
+//
+//
+// DATA-MODELS
+//
+//
+
+
+// TODO: ...
