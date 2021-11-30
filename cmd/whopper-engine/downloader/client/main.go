@@ -4,16 +4,13 @@ import (
 	"climatewhopper/pkg/api"
 	"climatewhopper/pkg/util"
 	"context"
-	"time"
 
-	v1 "github.com/dapr/dapr/pkg/proto/common/v1"
-	pb "github.com/dapr/go-sdk/dapr/proto/runtime/v1"
+	dapr "github.com/dapr/go-sdk/client"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
-	address = "localhost:38889"
+	address = "localhost:40235"
 )
 
 func main() {
@@ -27,23 +24,46 @@ func main() {
 		logger.Fatalw("did not connect", "error", err)
 	}
 	defer conn.Close()
-	c := pb.NewAppCallbackClient(conn)
 
-	// Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	any := anypb.Any{}
-	any.MarshalFrom(&api.DownloadRequest{
+	// create dapr client
+	client := dapr.NewClientWithConnection(conn)
+	// if err != nil {
+	// 	logger.Panicw("could not create dapr client", "error", err)
+	// }
+	defer client.Close()
+
+	// ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	// defer cancel()
+	ctx := context.Background()
+
+	// data, err := proto.Marshal(&api.DownloadRequest{
+	// 	Id:  "sample-id",
+	// 	Url: "https://example.com",
+	// })
+	// if err != nil {
+	// 	logger.Panicw("data could not be transformed to bytes", "error", err)
+	// }
+	out, err := client.InvokeMethodWithCustomContent(ctx, "downloader", "Download", "test", "text/plain; charset=UTF-8", &api.DownloadRequest{
 		Id:  "sample-id",
 		Url: "https://example.com",
 	})
-	r, err := c.OnInvoke(ctx, &v1.InvokeRequest{
-		Method: "Download",
-		Data:   &any,
-	})
+
+	// c := pb.NewAppCallbackClient(conn)
+
+	// // Contact the server and print out its response.
+
+	// any := anypb.Any{}
+	// any.MarshalFrom(&api.DownloadRequest{
+	// 	Id:  "sample-id",
+	// 	Url: "https://example.com",
+	// })
+	// r, err := c.OnInvoke(ctx, &v1.InvokeRequest{
+	// 	Method: "Download",
+	// 	Data:   &any,
+	// })
 
 	if err != nil {
 		logger.Fatalw("could not perform download request", "error", err)
 	}
-	logger.Infow("received response", "response", r, "response data length", len(r.Data.Value))
+	logger.Infow("received response", "response", string(out), "response data length", len(out))
 }

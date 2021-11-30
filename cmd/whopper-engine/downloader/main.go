@@ -22,7 +22,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// server is used to implement helloworld.GreeterServer.
+// server is used to implement dapr callback server.
 type server struct {
 	logger     *zap.SugaredLogger
 	daprClient dapr.Client
@@ -117,6 +117,7 @@ func main() {
 // The payload carries a Method to identify the method, a set of metadata properties and an optional payload
 // see: https://docs.dapr.io/developing-applications/integrations/grpc-integration/
 func (s *server) OnInvoke(ctx context.Context, in *v1.InvokeRequest) (*v1.InvokeResponse, error) {
+	s.logger.Infow("Server Invoke", "in", *in)
 	var response *api.DownloadResponse
 	downloadRequest := api.DownloadRequest{}
 	err := in.Data.UnmarshalTo(downloadRequest.ProtoReflect().Interface())
