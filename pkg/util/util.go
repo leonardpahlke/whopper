@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/pflag"
@@ -34,20 +35,22 @@ func SetViperCfg(configName string, setViperDefaults func()) {
 
 // GetLogger this function is used to get a logger which is used to produce log outputs
 func GetLogger(lvl zapcore.Level) *zap.SugaredLogger {
-	cfg := zap.Config{
-		Level:    zap.NewAtomicLevelAt(lvl),
-		Sampling: &zap.SamplingConfig{},
-		Encoding: "yaml",
-		EncoderConfig: zapcore.EncoderConfig{
-			MessageKey: "message",
-			LevelKey:   "level",
-		},
-		OutputPaths:      []string{"stdout"},
-		ErrorOutputPaths: []string{"stderr"},
+	rawJSON := []byte(`{
+		"level": "` + lvl.String() + `",
+		"encoding": "json",
+		"outputPaths": ["stdout"],
+		"errorOutputPaths": ["stderr"],
+		"encoderConfig": {"messageKey": "message","levelKey": "level","levelEncoder": "lowercase"}
+	  }`,
+	)
+
+	var cfg zap.Config
+	if err := json.Unmarshal(rawJSON, &cfg); err != nil {
+		panic(fmt.Sprintf("[util/GetLogger] error in json.Unmarshal %v", err))
 	}
 	logger, err := cfg.Build()
 	if err != nil {
-		panic(fmt.Sprintf("[util/GetLogger] error in cfg.Build %v", err))
+		panic(fmt.Sprintf("error in cfg.Build %v", err))
 	}
 	sugar := logger.Sugar()
 	return sugar

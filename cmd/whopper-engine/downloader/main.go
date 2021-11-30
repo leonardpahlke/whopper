@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 
@@ -28,7 +27,7 @@ type server struct {
 
 // Download implements api.DownloaderServer
 func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.DownloadResponse, error) {
-	log.Printf("Received download invoke, id: %s", in.Id)
+	s.logger.Infow("received download invoke", "id", in.Id)
 
 	// get website data
 	resp, err := http.Get(in.Url)
