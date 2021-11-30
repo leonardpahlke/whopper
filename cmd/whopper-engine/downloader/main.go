@@ -53,7 +53,7 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 			},
 		}, err
 	}
-
+	s.logger.Debugw("write body to state storage", "body length", len(body))
 	// store data to database
 	err = s.daprClient.SaveState(ctx, viper.GetString("DaprStoreName"), in.Id, body)
 	if err != nil {
@@ -66,7 +66,20 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 			},
 		}, err
 	}
+	s.logger.Debugw("return OK response", "id", in.Id)
+	state, err := s.daprClient.GetState(ctx, viper.GetString("DaprStoreName"), in.Id)
+	if err != nil {
+		return &api.DownloadResponse{
+			Id: in.Id,
+			Head: &api.Head{
+				Status:        api.Status_ERROR,
+				StatusMessage: errors.Wrap(err, "could not get saved data from remote storage").Error(),
+				Timestamp:     timestamppb.Now(),
+			},
+		}, err
+	}
 
+	s.logger.Debugw("received state", "state", *state)
 	// response
 	return &api.DownloadResponse{
 		Id:   in.Id,
