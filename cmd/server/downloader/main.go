@@ -19,15 +19,54 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// server is used to implement helloworld.GreeterServer.
-type server struct {
+func init() {
+	util.SetViperCfg(string(whopperutil.WhopperEngineDownloader), func() {
+		// set config defaults
+		viper.SetDefault("Port", 50051)
+		viper.SetDefault("DaprStoreName", "statestore")
+		viper.SetDefault("LogLevel", util.Debug)
+		// set flags
+		pflag.Bool("test", false, "testmode")
+	})
+}
+
+func main() {
+	logger := util.GetLogger(util.MatchLogLevel(util.WrapLogLevel(viper.GetString("LogLevel"))))
+
+	// create dapr client
+	client, err := dapr.NewClient()
+	if err != nil {
+		logger.Panicw("could not create dapr client", "error", err)
+	}
+	defer client.Close()
+
+	// net listen
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", viper.GetInt("Port")))
+	if err != nil {
+		logger.Fatalw("failed to listen", "error", err)
+	}
+
+	// create new gRPC server
+	s := grpc.NewServer()
+	api.RegisterDownloaderServer(s, &implementedDownloaderServer{
+		daprClient: client,
+		logger:     util.GetLogger(zap.DebugLevel),
+	})
+	logger.Infow("server is listening", "address", lis.Addr())
+	if err := s.Serve(lis); err != nil {
+		logger.Fatalw("failed to server", "error", err)
+	}
+}
+
+// implementedDownloaderServer is used to implement Download function.
+type implementedDownloaderServer struct {
 	logger     *zap.SugaredLogger
 	daprClient dapr.Client
 	api.UnimplementedDownloaderServer
 }
 
 // Download implements api.DownloaderServer
-func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.DownloadResponse, error) {
+func (s *implementedDownloaderServer) Download(ctx context.Context, in *api.DownloadRequest) (*api.DownloadResponse, error) {
 	s.logger.Infow("received download invoke", "id", in.Id)
 
 	// get website data
@@ -67,20 +106,7 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 			},
 		}, err
 	}
-	s.logger.Debugw("return OK response", "id", in.Id)
-	state, err := s.daprClient.GetState(ctx, viper.GetString("DaprStoreName"), in.Id)
-	if err != nil {
-		return &api.DownloadResponse{
-			Id: in.Id,
-			Head: &api.Head{
-				Status:        api.Status_ERROR,
-				StatusMessage: errors.Wrap(err, "could not get saved data from remote storage").Error(),
-				Timestamp:     timestamppb.Now(),
-			},
-		}, err
-	}
 
-	s.logger.Debugw("received state", "state", *state)
 	// response
 	return &api.DownloadResponse{
 		Id:   in.Id,
@@ -91,43 +117,4 @@ func (s *server) Download(ctx context.Context, in *api.DownloadRequest) (*api.Do
 			Timestamp:     timestamppb.Now(),
 		},
 	}, nil
-}
-
-func main() {
-	logger := util.GetLogger(util.MatchLogLevel(util.WrapLogLevel(viper.GetString("LogLevel"))))
-
-	// create dapr client
-	client, err := dapr.NewClient()
-	if err != nil {
-		logger.Panicw("could not create dapr client", "error", err)
-	}
-	defer client.Close()
-
-	// net listen
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", viper.GetInt("Port")))
-	if err != nil {
-		logger.Fatalw("failed to listen", "error", err)
-	}
-
-	// create new gRPC server
-	s := grpc.NewServer()
-	api.RegisterDownloaderServer(s, &server{
-		daprClient: client,
-		logger:     util.GetLogger(zap.DebugLevel),
-	})
-	logger.Infow("server is listening", "address", lis.Addr())
-	if err := s.Serve(lis); err != nil {
-		logger.Fatalw("failed to server", "error", err)
-	}
-}
-
-func init() {
-	util.SetViperCfg(string(whopperutil.WhopperEngineDownloader), func() {
-		// set config defaults
-		viper.SetDefault("Port", 50051)
-		viper.SetDefault("DaprStoreName", "statestore")
-		viper.SetDefault("LogLevel", util.Debug)
-		// set flags
-		pflag.Bool("test", false, "testmode")
-	})
 }
