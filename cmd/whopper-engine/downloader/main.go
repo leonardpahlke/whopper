@@ -3,6 +3,7 @@ package main
 import (
 	"climatewhopper/pkg/api"
 	"climatewhopper/pkg/util"
+	"climatewhopper/pkg/whopperutil"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -121,7 +122,7 @@ func main() {
 }
 
 func init() {
-	util.SetViperCfg("downloader", func() {
+	util.SetViperCfg(string(whopperutil.WhopperEngineDownloader), func() {
 		// set config defaults
 		viper.SetDefault("Port", 50051)
 		viper.SetDefault("DaprStoreName", "statestore")

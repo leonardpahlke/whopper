@@ -33,16 +33,3 @@ update-deps-go:
 	go get -u -t ./...
 	go mod tidy
 	go mod verify
-
-##@ Verify go application with a docker container
-virt-verify: verify-build virt-run
-
-.PHONY: verify-build virt-jump virt-run
-virt-build:
-	docker build -t acs-cl2-shipper-container -f ./build/Dockerfile.test .	
-
-virt-run:	
-	docker run acs-cl2-shipper-container:latest
-
-virt-jump:
-	docker run --rm -it --entrypoint bash acs-cl2-shipper-container

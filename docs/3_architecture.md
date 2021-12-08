@@ -1,5 +1,0 @@
-# Architecture
-
-...
-
-TODO: docs architecture

@@ -1,5 +1,0 @@
-# Technologies
-
-...
-
-TODO: docs technologies

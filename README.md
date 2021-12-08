@@ -20,7 +20,7 @@ npm install
 go get ./...
 ```
 
-2. Login to google cloud via `gcloud` CLI
+2. Login to google cloud via the `gcloud` CLI
 
 ```bash
 gcloud auth login
@@ -29,7 +29,8 @@ gcloud config set project <YOUR_GCP_PROJECT_HERE>
 gcloud auth application-default login
 ```
 
-3. Configure project
+3. Configure project (see Configuration section)
+4. Deployment (see Deployment section)
 
 ### Configuration
 
@@ -52,6 +53,12 @@ gcloud container clusters get-credentials <cluster> --zone <cluster zone> --proj
 #### Application configuration
 
 TODO: ...Application configuration
+ 
+### Deployment
+
+#### Local testing
+
+#### Deployment
 
 ## Architecture:
 

@@ -42,9 +42,9 @@ func main() {
 }
 
 func init() {
-	util.SetViperCfg(string(whopperutil.WhopperEngineAnalyzer), func() {
+	util.SetViperCfg(string(whopperutil.WhopperControllerHub), func() {
 		// set config defaults
-		viper.SetDefault("Port", 50054)
+		viper.SetDefault("Port", 50050)
 		viper.SetDefault("DaprStoreName", "statestore")
 		viper.SetDefault("LogLevel", util.Debug)
 		// set flags
