@@ -1,18 +1,35 @@
 # Climate Whopper
 
-Project under development
+!!! Project under active development !!!
 
 TODO: README...
 
-## Idea:
-
-...
+Overview: ...
 
 ## Getting started
 
-Required installations: `go`, `node`, `pulumi`, `gcloud`
+Required installations:
 
-1. Install project dependencies
+-   Pods are written in `go`: [installation guide]()
+-   To manage infrastructure `pulumi` is used: [installation guide]()
+-   Pulumi uses `node`: [installation guide]()
+-   As this project uses GCP the CLI `gcloud` is used: [installation guide]()
+-   To interact with the kubernetes cluster `kubectl` is used: [installation guide]()
+-   `dapr` is used as well: [installation guide]()
+
+To check if all application have been downloaded you can run:
+
+```bash
+TODO: ...
+make verify-installation
+```
+
+To install all project dependencies you can run:
+
+```bash
+TODO: ...
+make install
+```
 
 ```bash
 # TODO: ...
@@ -53,32 +70,46 @@ gcloud container clusters get-credentials <cluster> --zone <cluster zone> --proj
 #### Application configuration
 
 TODO: ...Application configuration
- 
+
 ### Deployment
 
 #### Local testing
 
 #### Deployment
 
-## Architecture:
+## Architecture
 
-TODO: ...Architecture
+The architecture is shown in multiple diagrams to provide different level of complexity and the opportunity to highlight different parts of the system.
 
-Components
+### Component overview
 
-Crawler Controller:
+As this system has been reconstructed from an AWS Project, first the AWS components will be given.
+The following diagram shows the overall system architecture of the AWS system. To understand the interaction between the components, arrows have been provided with numbers showing a flow (1..9), after the diagram follows an explanation point by point.
 
-Crawler Engine Containers & pod's:
+![General AWS System Overview](./assets/consider-cloud-native-aws-system-overview.png)
 
--   Downloader
--   Parser
--   Translator
--   Analyzer
+1. After a scheduled routine the crawler hub starts
+2. To avoid scanning the entire newspaper website the latest newspaper article will be provided as stopping point
+3. The crawler hub notifies the discoverer to scan a newspaper website. One call per newspaper website
+4. The discoverer scrapes a newspaper website and checks stores all articles that has been published since the latest article
+5. New unprocessed articles are getting feed into the crawler engine
+6. Download raw html article from newspaper website
+7. After article processing is over the data will be stored in the article data, database
+8. The article status will be updated to avoid processing the article multiple times
+9. The data representation can call async the article data for visualization
 
-Data Analyzer:
+As this diagram just shows the AWS components the next diagram will show the cloud native artictecture components.
 
--   Jupyter notebook pod
+### Cloud Native architecture
+
+TODO:...
 
 ## Project structure
 
-TODO: ...Project structure
+Now as the overall project idea and architecture has been discussed. The project structure will be highligted to support navigating through the project.
+
+TODO: ...Project structure (tree)
+
+## Local testing
+
+TODO: ...local testing
