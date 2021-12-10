@@ -19,19 +19,21 @@ type stateConfig struct {
 	key            string
 }
 
-var stateCfg = stateConfig{
-	stateStoreName: "statestore",
-	key:            "",
-}
-var stateCmd = &cobra.Command{
-	Use:              "state",
-	Short:            "Used to interact with the state storage",
-	SilenceUsage:     true,
-	TraverseChildren: true,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		cfg.logger.Infow("run state command", "storename", stateCfg.stateStoreName, "key", stateCfg.key)
-	},
-}
+var (
+	stateCfg = stateConfig{
+		stateStoreName: "statestore",
+		key:            "",
+	}
+	stateCmd = &cobra.Command{
+		Use:              "state",
+		Short:            "Used to interact with the state storage",
+		SilenceUsage:     true,
+		TraverseChildren: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			cfg.logger.Infow("run state command", "storename", stateCfg.stateStoreName, "key", stateCfg.key)
+		},
+	}
+)
 
 func init() {
 	// register state command to root command
@@ -40,7 +42,9 @@ func init() {
 	stateCmd.PersistentFlags().StringVar(&stateCfg.stateStoreName, "statestore", stateCfg.stateStoreName, "Name of the state storage")
 	stateCmd.PersistentFlags().StringVarP(&stateCfg.key, "key", "k", "", "State storage key")
 	// set flags to required
-	stateCmd.MarkPersistentFlagRequired("key")
+	if err := stateCmd.MarkPersistentFlagRequired("key"); err != nil {
+		panic(err)
+	}
 	// register state sub commands
 	stateCmd.AddCommand(getStateCmd)
 }

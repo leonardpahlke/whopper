@@ -6,11 +6,9 @@ import (
 	"climatewhopper/pkg/util"
 	"climatewhopper/pkg/whopperutil"
 	"context"
-	"errors"
 	"fmt"
 	"net"
 
-	"github.com/foolin/pagser"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -57,60 +55,17 @@ func init() {
 }
 
 func (s *implementedDiscoveryServer) Discover(ctx context.Context, in *api.DiscovererRequest) (*api.DiscovererResponse, error) {
-	// This client is used to parse & discover unprocessed articles from newspaper websites
-	p := pagser.New()
-
-	unprocessedArticles := []*api.ArticleHead{}
-	// loop over all newspapers that have been requested to be discovered
-	// TODO: run discovery calls in concurrent (go routine)
-	for _, e := range in.Info {
-		switch e.Newspaper {
-		// TODO: define newaspaper references with a type
-		case "taz":
-			{
-				articles, err := newsparser.TazDiscoverer(p, e.Url)
-				if err != nil {
-					s.logger.Errorw("error running whopperutil.TazDiscoverer", "request  info", e)
-					return &api.DiscovererResponse{
-						Articles: unprocessedArticles,
-						Head: &api.Head{
-							Status:        api.Status_ERROR,
-							StatusMessage: "received error during article discovery",
-							Timestamp:     timestamppb.Now(),
-						},
-					}, err
-				}
-				s.logger.Infow("received taz discovery response", "amount of articles", len(articles.Articles))
-				for _, a := range articles.Articles {
-					// If the ID is not latestID the article has not been processed yet
-					if a.ID != e.LatestId {
-						unprocessedArticles = append(unprocessedArticles, &api.ArticleHead{
-							Id:          a.ID,
-							Url:         a.URL,
-							ReleaseDate: a.Date,
-							Title:       a.Title,
-							Subtitle:    a.SubTitle,
-							Description: a.Description,
-							Category:    articles.Category,
-						})
-					} else {
-						// The website structures articles in order, this allows to break if the ID matches -- all articles after that have already been processed
-						break
-					}
-				}
-			}
-		default:
-			err := errors.New("unrecognized input identifier")
-			s.logger.Errorw("could not match newspaper reference to parser", "input information", in, "error", err)
-			return nil, err
-		}
+	unprocessedArticles, err := newsparser.BatchDiscovery(in.Info)
+	if err != nil {
+		s.logger.Errorw("could not run batch discovery")
+		return nil, err
 	}
 
 	return &api.DiscovererResponse{
 		Articles: unprocessedArticles,
 		Head: &api.Head{
 			Status:        api.Status_OK,
-			StatusMessage: fmt.Sprintf("successfully discovered new articles, count: %d", len(unprocessedArticles)),
+			StatusMessage: fmt.Sprintf("successfully discovered new articles, amount: %d", len(unprocessedArticles)),
 			Timestamp:     timestamppb.Now(),
 		},
 	}, nil

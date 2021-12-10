@@ -10,7 +10,6 @@ import (
 
 func init() {
 	rootCmd.AddCommand(analyzerCmd)
-	analyzerCmd.MarkFlagRequired("port")
 }
 
 var analyzerCmd = &cobra.Command{

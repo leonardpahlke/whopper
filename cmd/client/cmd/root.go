@@ -43,5 +43,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfg.grpcHost, "dapr-host", "localhost", "Specify where to reach dapr by providing an ipv4")
 	rootCmd.PersistentFlags().IntVarP(&cfg.grpcPort, "dapr-grpc-port", "p", 0, "Dapr gRPC port")
 	// mark required flags
-	rootCmd.MarkPersistentFlagRequired("port")
+	if err := rootCmd.MarkPersistentFlagRequired("port"); err != nil {
+		panic(err)
+	}
 }

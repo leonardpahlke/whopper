@@ -20,5 +20,5 @@ var (
 	WhopperEngineAnalyzer WhopperServerName = "analyzer"
 
 	// WhopperServers available whopper servers
-	WhopperServers []WhopperServerName = []WhopperServerName{WhopperControllerDiscoverer, WhopperControllerHub, WhopperEngineDownloader, WhopperEngineParser, WhopperEngineTranslator, WhopperEngineAnalyzer}
+	WhopperServers = []WhopperServerName{WhopperControllerDiscoverer, WhopperControllerHub, WhopperEngineDownloader, WhopperEngineParser, WhopperEngineTranslator, WhopperEngineAnalyzer}
 )

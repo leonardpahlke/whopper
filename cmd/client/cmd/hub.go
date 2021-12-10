@@ -13,7 +13,7 @@ var hubCmd = &cobra.Command{
 	Short:        fmt.Sprintf("Send a request to the whopper-controller %s server", whopperutil.WhopperControllerHub),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDownloaderClient(cfg)
+		return runHubClient(cfg)
 	},
 }
 
