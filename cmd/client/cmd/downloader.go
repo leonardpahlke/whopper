@@ -49,13 +49,15 @@ func runDownloaderClient(cfg *clientConfig) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
-	ctx = metadata.AppendToOutgoingContext(ctx, "dapr-app-id", "downloader")
+	ctx = metadata.AppendToOutgoingContext(ctx, "dapr-app-id", string(whopperutil.WhopperEngineDownloader))
 
 	// Send download request to server
 	r, err := c.Download(ctx, downloaderRequest)
 	if err != nil {
 		return errors.Wrap(err, "could not perform a download request")
 	}
+
+	// TODO: check head
 
 	cfg.logger.Infow("received response", "response id", r.Id, "response data length", len(r.Data))
 	return nil

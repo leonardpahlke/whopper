@@ -4,12 +4,6 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/leonardpahlke/climatewhopper/pkg/api";
 
-//
-//
-// GENERAL PORPUSE STUFF
-//
-//
-
 
 // Status request processing
 enum Status {
@@ -49,18 +43,26 @@ message HubResponse {
 }
 
 // Discoverer
+// The discoverer processes multiple requests to reduce traffic
 service Discoverer {
   rpc Discover (DiscovererRequest) returns (DiscovererResponse) {}
 }
 message DiscovererRequest {
-  string newspaper = 1;
-  string latestId = 2;
+  repeated InDiscovererInfo info = 1;
 }
 message DiscovererResponse {
-  bool newArticlesFound = 1;
-  string newspaper = 2;
-  repeated string articleWebsites = 3;
-  Head head = 4;
+  repeated ArticleHead articles = 1;
+  Head head = 2;
+}
+// request data
+message InDiscovererInfo {
+  string newspaper = 1;
+  string url = 2;
+  int64 latestId = 3;
+}
+// response data
+message OutDiscovererInfo {
+  repeated ArticleHead newArticleHeads = 2;
 }
 
 
@@ -133,4 +135,55 @@ message AnalyzerResponse {
 // DATA-MODELS
 //
 
-// TODO: ...
+message Newspaper {
+  // Name of the newspaper
+  string name = 1;
+  // URLs which will be fet into the discoverer
+  repeated string articleDiscoveryUrls = 2;
+}
+
+// Structure of an newspaper article 
+message Article {
+  ArticleHead head = 1;
+  ArticleBody body = 2;
+  ArticleAnalytics analytics = 3;
+}
+
+// General article information which is provided by the article discoverer
+message ArticleHead {
+  // Id of the article (unique)
+  int64 id = 1;
+  // URL which leads to the article text
+  string url = 2;
+  // article release date
+  string releaseDate = 3;
+  // Title of the article
+  string title = 4;
+  // Subtitle of the article
+  string subtitle = 5;
+  // General description of the article
+  string description = 6;
+  // Category of the article on the newspaper
+  string category = 7;
+}
+
+// TODO: This message is used to store general article information
+// This information is provided by the article parser / article translator
+message ArticleBody {
+  // Article text how it is written on the website
+  string originalText = 1;
+  // Article text translated if the original language is not english
+  string translatedText = 2;
+  // Tells if the article has been translated
+  bool articletranslated = 3;
+  // Original language of the article
+  string originalLanguage = 4;
+  // Some newspapers 
+  repeated string tags = 5;
+}
+
+// TODO: This message is used to store article analytics data
+// This information is provided by the article analyzer
+message ArticleAnalytics {
+  bytes data = 1;
+}

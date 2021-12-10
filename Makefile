@@ -46,17 +46,17 @@ start-downloader:
 	echo "run downloader"
 	dapr run --app-id downloader --app-protocol grpc --app-port 50051 --config ./configs/downloader.yaml -- go run ./cmd/server/downloader/main.go
 
-.PHONY: run-parser
+.PHONY: start-parser
 start-parser:
 	echo "run parser"
 	echo "TODO: not yet implemented"
 
-.PHONY: run-translator
+.PHONY: start-translator
 start-translator:
 	echo "run translator"
 	echo "TODO: not yet implemented"
 
-.PHONY: run-analyzer
+.PHONY: start-analyzer
 start-analyzer:
 	echo "run analyzer"
 	echo "TODO: not yet implemented"
@@ -69,7 +69,7 @@ start-hub:
 .PHONY: start-discoverer
 start-discoverer:
 	echo "run discoverer"
-	echo "TODO: not yet implemented"
+	dapr run --app-id discoverer --app-protocol grpc --app-port 50055 --config ./configs/discoverer.yaml -- go run ./cmd/server/discoverer/main.go
 
 
 ##@ Update golang dependencies
