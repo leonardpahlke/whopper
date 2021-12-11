@@ -82,7 +82,7 @@ message DownloadResponse {
   // request id / article id
   string id = 1;
   // html website data
-  bytes data = 2;
+  ArticleFooter articleFooter = 2;
   // response head
   Head head = 3;
 }
@@ -94,12 +94,12 @@ service Parser {
 message ParserRequest {
   string id = 1;
   string newspaper = 2;
-  string url = 3;
+  string rawArticle = 3;
 }
 message ParserResponse {
   string id = 1;
   string newspaper = 2;
-  bytes text = 3;
+  ArticleBody text = 3;
   Head head = 4;
 }
 
@@ -148,6 +148,7 @@ message Article {
   ArticleHead head = 1;
   ArticleBody body = 2;
   ArticleAnalytics analytics = 3;
+  ArticleFooter footer = 4;
 }
 
 // General article information which is provided by the article discoverer
@@ -180,6 +181,12 @@ message ArticleBody {
   string originalLanguage = 4;
   // Some newspapers 
   repeated string tags = 5;
+}
+
+// This information is provided by the article parser / article translator
+message ArticleFooter {
+  // Article data which has not been parsed or processed yet
+  string rawArticleText = 1;
 }
 
 // This information is provided by the article analyzer

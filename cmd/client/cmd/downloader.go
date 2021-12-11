@@ -59,6 +59,6 @@ func runDownloaderClient(cfg *clientConfig) error {
 
 	// TODO: check head
 
-	cfg.logger.Infow("received response", "response id", r.Id, "response data length", len(r.Data))
+	cfg.logger.Infow("received response", "response id", r.Id, "response data length", len(r.ArticleFooter.RawArticleText))
 	return nil
 }

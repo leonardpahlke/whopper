@@ -2,30 +2,54 @@ package main
 
 import (
 	"climatewhopper/pkg/api"
+	"climatewhopper/pkg/newsparser"
 	"climatewhopper/pkg/util"
 	"climatewhopper/pkg/whopperutil"
 	"context"
-	"errors"
 	"fmt"
 	"net"
 
 	dapr "github.com/dapr/go-sdk/client"
+	"github.com/foolin/pagser"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // implementedParserServer is used to implement Parse function.
 type implementedParserServer struct {
-	logger     *zap.SugaredLogger
-	daprClient dapr.Client
+	logger       *zap.SugaredLogger
+	daprClient   dapr.Client
+	pagserClient *pagser.Pagser
 	api.UnimplementedParserServer
 }
 
 // Parse function extends gRPC parser server function and is used to parse a newspaper article text
-func (s implementedParserServer) Parse(context.Context, *api.ParserRequest) (*api.ParserResponse, error) {
-	return nil, errors.New("server not implemented yet")
+func (s implementedParserServer) Parse(ctx context.Context, in *api.ParserRequest) (*api.ParserResponse, error) {
+	parser, err := newsparser.GetNewspaperParser(newsparser.Newspaper(in.Newspaper))
+	if err != nil {
+		return &api.ParserResponse{
+			Id:        in.Id,
+			Newspaper: in.Newspaper,
+			Head:      &api.Head{Status: api.Status_ERROR, StatusMessage: "could not find a parser to parse raw website data", Timestamp: timestamppb.Now()},
+		}, err
+	}
+	articleBody, err := parser.ParseArticle(s.pagserClient, &in.RawArticle)
+	if err != nil {
+		return &api.ParserResponse{
+			Id:        in.Id,
+			Newspaper: in.Newspaper,
+			Head:      &api.Head{Status: api.Status_ERROR, StatusMessage: "could not parse raw website data", Timestamp: timestamppb.Now()},
+		}, err
+	}
+	return &api.ParserResponse{
+		Id:        in.Id,
+		Newspaper: in.Newspaper,
+		Text:      articleBody,
+		Head:      &api.Head{Status: api.Status_OK, StatusMessage: "parsed article text from raw article data", Timestamp: timestamppb.Now()},
+	}, nil
 }
 
 func main() {

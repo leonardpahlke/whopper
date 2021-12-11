@@ -69,8 +69,14 @@ func (n TazNewsParser) DiscoverArticles(p *pagser.Pagser, getWebsiteData func() 
 
 // ParseArticle used to parse taz newspaper articles
 func (n TazNewsParser) ParseArticle(p *pagser.Pagser, articleText *string) (*api.ArticleBody, error) {
-	// TODO: implement taz article parser
-	return nil, errors.New("not implemented yet")
+	var data TazArticleTextParser
+	err := p.Parse(&data, *articleText)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not parse taz article")
+	}
+	return &api.ArticleBody{
+		OriginalText: strings.Join(data.Paragraphs, " "),
+	}, nil
 }
 
 // TazArticleDiscovery represents the taz website overview
@@ -108,4 +114,7 @@ func (d TazArticleDiscovery) RemoveSpaces(node *goquery.Selection, args ...strin
 // Article Parser
 ///
 
-// TODO: ... parse taz article text see api.ArticleBody
+// TazArticleTextParser represents the structure of a taz article
+type TazArticleTextParser struct {
+	Paragraphs []string `pagser:"article[class='sectbody'][itemprop='articleBody'] p[xmlns='']->text()"`
+}

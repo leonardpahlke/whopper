@@ -109,12 +109,10 @@ func (s *implementedDownloaderServer) Download(ctx context.Context, in *api.Down
 
 	// response
 	return &api.DownloadResponse{
-		Id:   in.Id,
-		Data: body,
-		Head: &api.Head{
-			Status:        api.Status_OK,
-			StatusMessage: "data downloaded and stored",
-			Timestamp:     timestamppb.Now(),
+		Id: in.Id,
+		ArticleFooter: &api.ArticleFooter{
+			RawArticleText: string(body),
 		},
+		Head: &api.Head{Status: api.Status_OK, StatusMessage: "data downloaded and stored", Timestamp: timestamppb.Now()},
 	}, nil
 }
