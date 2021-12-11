@@ -31,7 +31,7 @@ func NewHubClient(cc grpc.ClientConnInterface) HubClient {
 
 func (c *hubClient) RunHub(ctx context.Context, in *HubRequest, opts ...grpc.CallOption) (*HubResponse, error) {
 	out := new(HubResponse)
-	err := c.cc.Invoke(ctx, "/Hub/RunHub", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/whopper.api.Hub/RunHub", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func _Hub_RunHub_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Hub/RunHub",
+		FullMethod: "/whopper.api.Hub/RunHub",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HubServer).RunHub(ctx, req.(*HubRequest))
@@ -88,7 +88,7 @@ func _Hub_RunHub_Handler(srv interface{}, ctx context.Context, dec func(interfac
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Hub_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Hub",
+	ServiceName: "whopper.api.Hub",
 	HandlerType: (*HubServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -117,7 +117,7 @@ func NewDiscovererClient(cc grpc.ClientConnInterface) DiscovererClient {
 
 func (c *discovererClient) Discover(ctx context.Context, in *DiscovererRequest, opts ...grpc.CallOption) (*DiscovererResponse, error) {
 	out := new(DiscovererResponse)
-	err := c.cc.Invoke(ctx, "/Discoverer/Discover", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/whopper.api.Discoverer/Discover", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func _Discoverer_Discover_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Discoverer/Discover",
+		FullMethod: "/whopper.api.Discoverer/Discover",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DiscovererServer).Discover(ctx, req.(*DiscovererRequest))
@@ -174,7 +174,7 @@ func _Discoverer_Discover_Handler(srv interface{}, ctx context.Context, dec func
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Discoverer_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Discoverer",
+	ServiceName: "whopper.api.Discoverer",
 	HandlerType: (*DiscovererServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -203,7 +203,7 @@ func NewDownloaderClient(cc grpc.ClientConnInterface) DownloaderClient {
 
 func (c *downloaderClient) Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (*DownloadResponse, error) {
 	out := new(DownloadResponse)
-	err := c.cc.Invoke(ctx, "/Downloader/Download", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/whopper.api.Downloader/Download", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func _Downloader_Download_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Downloader/Download",
+		FullMethod: "/whopper.api.Downloader/Download",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DownloaderServer).Download(ctx, req.(*DownloadRequest))
@@ -260,7 +260,7 @@ func _Downloader_Download_Handler(srv interface{}, ctx context.Context, dec func
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Downloader_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Downloader",
+	ServiceName: "whopper.api.Downloader",
 	HandlerType: (*DownloaderServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -289,7 +289,7 @@ func NewParserClient(cc grpc.ClientConnInterface) ParserClient {
 
 func (c *parserClient) Parse(ctx context.Context, in *ParserRequest, opts ...grpc.CallOption) (*ParserResponse, error) {
 	out := new(ParserResponse)
-	err := c.cc.Invoke(ctx, "/Parser/Parse", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/whopper.api.Parser/Parse", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +334,7 @@ func _Parser_Parse_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Parser/Parse",
+		FullMethod: "/whopper.api.Parser/Parse",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ParserServer).Parse(ctx, req.(*ParserRequest))
@@ -346,7 +346,7 @@ func _Parser_Parse_Handler(srv interface{}, ctx context.Context, dec func(interf
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Parser_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Parser",
+	ServiceName: "whopper.api.Parser",
 	HandlerType: (*ParserServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -375,7 +375,7 @@ func NewTranslatorClient(cc grpc.ClientConnInterface) TranslatorClient {
 
 func (c *translatorClient) Translate(ctx context.Context, in *TranslatorRequest, opts ...grpc.CallOption) (*TranslatorResponse, error) {
 	out := new(TranslatorResponse)
-	err := c.cc.Invoke(ctx, "/Translator/Translate", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/whopper.api.Translator/Translate", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -420,7 +420,7 @@ func _Translator_Translate_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Translator/Translate",
+		FullMethod: "/whopper.api.Translator/Translate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TranslatorServer).Translate(ctx, req.(*TranslatorRequest))
@@ -432,7 +432,7 @@ func _Translator_Translate_Handler(srv interface{}, ctx context.Context, dec fun
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Translator_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Translator",
+	ServiceName: "whopper.api.Translator",
 	HandlerType: (*TranslatorServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -461,7 +461,7 @@ func NewAnalyzerClient(cc grpc.ClientConnInterface) AnalyzerClient {
 
 func (c *analyzerClient) Analyze(ctx context.Context, in *AnalyzerRequest, opts ...grpc.CallOption) (*AnalyzerResponse, error) {
 	out := new(AnalyzerResponse)
-	err := c.cc.Invoke(ctx, "/Analyzer/Analyze", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/whopper.api.Analyzer/Analyze", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -506,7 +506,7 @@ func _Analyzer_Analyze_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Analyzer/Analyze",
+		FullMethod: "/whopper.api.Analyzer/Analyze",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AnalyzerServer).Analyze(ctx, req.(*AnalyzerRequest))
@@ -518,7 +518,7 @@ func _Analyzer_Analyze_Handler(srv interface{}, ctx context.Context, dec func(in
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Analyzer_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "Analyzer",
+	ServiceName: "whopper.api.Analyzer",
 	HandlerType: (*AnalyzerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

@@ -1,16 +1,32 @@
 package main
 
 import (
+	"climatewhopper/pkg/api"
 	"climatewhopper/pkg/util"
 	"climatewhopper/pkg/whopperutil"
+	"context"
+	"errors"
 	"fmt"
 	"net"
 
 	dapr "github.com/dapr/go-sdk/client"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
+
+// implementedParserServer is used to implement Parse function.
+type implementedParserServer struct {
+	logger     *zap.SugaredLogger
+	daprClient dapr.Client
+	api.UnimplementedParserServer
+}
+
+// Parse function extends gRPC parser server function and is used to parse a newspaper article text
+func (s implementedParserServer) Parse(context.Context, *api.ParserRequest) (*api.ParserResponse, error) {
+	return nil, errors.New("server not implemented yet")
+}
 
 func main() {
 	logger := util.GetLogger(util.MatchLogLevel(util.WrapLogLevel(viper.GetString("LogLevel"))))
@@ -31,10 +47,10 @@ func main() {
 	// create new gRPC server
 	s := grpc.NewServer()
 	// Register server
-	// api.RegisterDownloaderServer(s, &server{
-	// 	daprClient: client,
-	// 	logger:     util.GetLogger(zap.DebugLevel),
-	// })
+	api.RegisterParserServer(s, &implementedParserServer{
+		daprClient: client,
+		logger:     util.GetLogger(zap.DebugLevel),
+	})
 	logger.Infow("server is listening", "address", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		logger.Fatalw("failed to server", "error", err)

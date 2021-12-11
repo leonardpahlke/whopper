@@ -37,6 +37,13 @@ npm install
 go get ./...
 ```
 
+clone googleapis to be able to compile the `./api/whopper.proto` file
+TODO: explanation: as the whopper system is using google cloud services to run analytics, the analytics response works directly with that ...
+
+```bash
+git clone https://github.com/googleapis/googleapis $GOPATH/googleapis
+```
+
 2. Login to google cloud via the `gcloud` CLI
 
 ```bash

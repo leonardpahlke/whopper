@@ -1,16 +1,36 @@
 package main
 
 import (
+	"climatewhopper/pkg/api"
 	"climatewhopper/pkg/util"
 	"climatewhopper/pkg/whopperutil"
+	"context"
+	"errors"
 	"fmt"
 	"net"
 
 	dapr "github.com/dapr/go-sdk/client"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
+
+// implementedHubServer is used to implement RunHub function.
+type implementedHubServer struct {
+	logger     *zap.SugaredLogger
+	daprClient dapr.Client
+	api.UnimplementedHubServer
+}
+
+// RunHub implements the gRPC server function
+// The hub is used as scheduler which kicks off processing
+// 1. Start Discoverer
+// 2. Start Argo Workflow (article processing)
+func (s implementedHubServer) RunHub(ctx context.Context, in *api.HubRequest) (*api.HubResponse, error) {
+	// TODO: implement RunHub
+	return nil, errors.New("server not implemented yet")
+}
 
 func main() {
 	logger := util.GetLogger(util.MatchLogLevel(util.WrapLogLevel(viper.GetString("LogLevel"))))
@@ -31,10 +51,10 @@ func main() {
 	// create new gRPC server
 	s := grpc.NewServer()
 	// Register server
-	// api.RegisterDownloaderServer(s, &server{
-	// 	daprClient: client,
-	// 	logger:     util.GetLogger(zap.DebugLevel),
-	// })
+	api.RegisterHubServer(s, &implementedHubServer{
+		daprClient: client,
+		logger:     util.GetLogger(zap.DebugLevel),
+	})
 	logger.Infow("server is listening", "address", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		logger.Fatalw("failed to server", "error", err)

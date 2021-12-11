@@ -37,7 +37,7 @@ install:
 
 .PHONY: compile-grpc
 compile-grpc:
-	protoc --go_out=pkg/ --go_opt=paths=source_relative --go-grpc_out=pkg/ --go-grpc_opt=paths=source_relative api/whopper.proto
+	protoc -I=. -I=$(GOPATH)/googleapis/ --go_out=pkg/ --go_opt=paths=source_relative --go-grpc_out=pkg/ --go-grpc_opt=paths=source_relative api/whopper.proto
 
 ##@ Start dapr apk locally
 
