@@ -21,7 +21,7 @@ To check if all application have been downloaded you can run:
 
 ```bash
 TODO: ...
-make verify-installation
+make install-verify
 ```
 
 To install all project dependencies you can run:

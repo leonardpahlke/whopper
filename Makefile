@@ -27,9 +27,9 @@ test-go-unit:
 
 ##@ Project setup and stallation
 
-.PHONY: verify-installation
-verify-installation:
-	./scripts/verify-installation.sh
+.PHONY: install-verify
+install-verify:
+	./scripts/install-verify.sh
 
 .PHONY: install verify-installation
 install:
