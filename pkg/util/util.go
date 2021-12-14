@@ -4,34 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
-
-// SetViperCfg simplify how to setup the viper configuration
-func SetViperCfg(configName string, setViperDefaults func()) {
-	// set config meta
-	viper.SetConfigName(configName)
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./climate-whopper/configs")
-	viper.AddConfigPath("$HOME/climate-whopper/configs")
-	viper.AddConfigPath("./configs")
-	// set config defaults
-	setViperDefaults()
-	// bind flags
-	pflag.Parse()
-	err := viper.BindPFlags(pflag.CommandLine)
-	if err != nil {
-		panic(fmt.Errorf("fatal error binding flags: %w", err))
-	}
-	// read config
-	err = viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %w", err))
-	}
-}
 
 // GetLogger this function is used to get a logger which is used to produce log outputs
 func GetLogger(lvl zapcore.Level) *zap.SugaredLogger {

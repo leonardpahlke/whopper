@@ -44,6 +44,6 @@ func init() {
 	rootCmd.PersistentFlags().IntVarP(&cfg.grpcPort, "dapr-grpc-port", "p", 0, "Dapr gRPC port")
 	// mark required flags
 	if err := rootCmd.MarkPersistentFlagRequired("port"); err != nil {
-		panic(err)
+		fmt.Println("Info: required flag 'port' is not set")
 	}
 }

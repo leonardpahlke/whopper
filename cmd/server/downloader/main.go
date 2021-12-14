@@ -2,72 +2,74 @@ package main
 
 import (
 	"climatewhopper/pkg/api"
-	"climatewhopper/pkg/util"
 	"climatewhopper/pkg/whopperutil"
 	"context"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 
-	dapr "github.com/dapr/go-sdk/client"
 	"github.com/pkg/errors"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func init() {
-	util.SetViperCfg(string(whopperutil.WhopperEngineDownloader), func() {
-		// set config defaults
-		viper.SetDefault("Port", 50051)
-		viper.SetDefault("DaprStoreName", "statestore")
-		viper.SetDefault("LogLevel", util.Debug)
-		// set flags
-		pflag.Bool("test", false, "testmode")
-	})
-}
-
-func main() {
-	logger := util.GetLogger(util.MatchLogLevel(util.WrapLogLevel(viper.GetString("LogLevel"))))
-
-	// create dapr client
-	client, err := dapr.NewClient()
-	if err != nil {
-		logger.Panicw("could not create dapr client", "error", err)
-	}
-	defer client.Close()
-
-	// net listen
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", viper.GetInt("Port")))
-	if err != nil {
-		logger.Fatalw("failed to listen", "error", err)
-	}
-
-	// create new gRPC server
-	s := grpc.NewServer()
-	api.RegisterDownloaderServer(s, &implementedDownloaderServer{
-		daprClient: client,
-		logger:     util.GetLogger(zap.DebugLevel),
-	})
-	logger.Infow("server is listening", "address", lis.Addr())
-	if err := s.Serve(lis); err != nil {
-		logger.Fatalw("failed to server", "error", err)
-	}
-}
-
 // implementedDownloaderServer is used to implement Download function.
 type implementedDownloaderServer struct {
-	logger     *zap.SugaredLogger
-	daprClient dapr.Client
+	clients *whopperutil.WhopperServerClients
+	config  *DownloaderServerConfig
 	api.UnimplementedDownloaderServer
 }
 
+// DownloaderServerConfig configuration which will be injected as dapr sidecar information
+type DownloaderServerConfig struct {
+	Spec struct {
+		Template struct {
+			Metadata struct {
+				DaprStoreName string `mapstructure:"daprStoreName"`
+				Annotations   struct {
+					AppID       string `mapstructure:"dapr.io/app-id"`
+					AppProtocol string `mapstructure:"dapr.io/app-protocol"`
+					AppPort     string `mapstructure:"dapr.io/app-port"`
+					LogLevel    string `mapstructure:"dapr.io/app-level"`
+				} `mapstructure:"annotations"`
+			} `mapstructure:"metadata"`
+		} `mapstructure:"template"`
+	} `mapstructure:"spec"`
+}
+
+func main() {
+	// parse configuration file with viper
+	config := DownloaderServerConfig{}
+	whopperutil.SetViperCfg(fmt.Sprintf("dapr-%s-config", whopperutil.WhopperEngineDownloader), func() {}, &config)
+
+	// create clients for server
+	clients := whopperutil.GetWhopperClient(whopperutil.WhopperServerClientIn{
+		LogLevel:      config.Spec.Template.Metadata.Annotations.LogLevel,
+		SetDaprClient: true,
+	})
+	// close clients after server shutsdown
+	defer clients.Close()
+
+	// create grpc server (without starting it yet)
+	serverInit, err := whopperutil.CreateGrpcServer(config.Spec.Template.Metadata.Annotations.AppPort)
+	if err != nil {
+		clients.Logger.Fatalw("could not create plain grpc server", "error", err)
+	}
+
+	// register grpc translator server
+	api.RegisterDownloaderServer(serverInit.Server, &implementedDownloaderServer{clients: &clients, config: &config})
+
+	// start listening on port
+	serverInit.StartListening(clients.Logger)
+}
+
+//
+// Server Methods
+//
+
 // Download implements api.DownloaderServer
 func (s *implementedDownloaderServer) Download(ctx context.Context, in *api.DownloadRequest) (*api.DownloadResponse, error) {
-	s.logger.Infow("received download invoke", "id", in.Id)
+	s.clients.Logger.Infow("received download invoke", "id", in.Id)
 
 	// get website data
 	resp, err := http.Get(in.Url)
@@ -81,6 +83,8 @@ func (s *implementedDownloaderServer) Download(ctx context.Context, in *api.Down
 			},
 		}, err
 	}
+
+	// read http body
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -93,9 +97,10 @@ func (s *implementedDownloaderServer) Download(ctx context.Context, in *api.Down
 			},
 		}, err
 	}
-	s.logger.Debugw("write body to state storage", "body length", len(body))
-	// store data to database
-	err = s.daprClient.SaveState(ctx, viper.GetString("DaprStoreName"), in.Id, body)
+	s.clients.Logger.Debugw("write body to state storage", "body length", len(body))
+
+	// store body to database
+	err = s.clients.DaprClient.SaveState(ctx, viper.GetString(s.config.Spec.Template.Metadata.DaprStoreName), in.Id, body)
 	if err != nil {
 		return &api.DownloadResponse{
 			Id: in.Id,
@@ -107,7 +112,7 @@ func (s *implementedDownloaderServer) Download(ctx context.Context, in *api.Down
 		}, err
 	}
 
-	// response
+	// create grpc response
 	return &api.DownloadResponse{
 		Id: in.Id,
 		ArticleFooter: &api.ArticleFooter{

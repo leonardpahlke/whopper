@@ -1,0 +1,31 @@
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+    name: "downloader"
+    namespace: "default"
+    labels:
+        app: downloader
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: downloader
+    template:
+        daprStoreName: "statestores"
+        metadata:
+            labels:
+                app: downloader
+            annotations:
+                dapr.io/enabled: "true"
+                dapr.io/app-id: "downloader"
+                dapr.io/app-protocol: "grpc"
+                dapr.io/app-port: "50055"
+                dapr.io/config: "tracing"
+                dapr.io/log-level: "debug"
+    tracing:
+        samplingRate: "1"
+        zipkin:
+            endpointAddress: http://localhost:9411/api/v2/spans
+    features:
+        - name: proxy.grpc
+          enabled: true

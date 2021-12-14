@@ -41,35 +41,36 @@ compile-grpc:
 
 ##@ Start dapr apk locally
 
-.PHONY: start-downloader
-start-downloader:
-	echo "run downloader"
-	dapr run --app-id downloader --app-protocol grpc --app-port 50051 --config ./configs/downloader.yaml -- go run ./cmd/server/downloader/main.go
-
-.PHONY: start-parser
-start-parser:
-	echo "run parser"
-	echo "TODO: not yet implemented"
-
-.PHONY: start-translator
-start-translator:
-	echo "run translator"
-	echo "TODO: not yet implemented"
-
-.PHONY: start-analyzer
-start-analyzer:
-	echo "run analyzer"
-	echo "TODO: not yet implemented"
-
 .PHONY: start-hub
 start-hub:
 	echo "run hub"
-	echo "TODO: not yet implemented"
+	dapr run --app-id hub --app-protocol grpc --app-port 50051 --config ./configs/dapr-config.yaml -- go run ./cmd/server/hub/main.go
 
 .PHONY: start-discoverer
 start-discoverer:
 	echo "run discoverer"
-	dapr run --app-id discoverer --app-protocol grpc --app-port 50055 --config ./configs/discoverer.yaml -- go run ./cmd/server/discoverer/main.go
+	dapr run --app-id discoverer --app-protocol grpc --app-port 50052 --config ./configs/dapr-config.yaml -- go run ./cmd/server/discoverer/main.go
+
+.PHONY: start-downloader
+start-downloader:
+	echo "run downloader"
+	dapr run --app-id downloader --app-protocol grpc --app-port 50053 --config ./configs/dapr-config.yaml -- go run ./cmd/server/downloader/main.go
+
+.PHONY: start-parser
+start-parser:
+	echo "run parser"
+	dapr run --app-id parser --app-protocol grpc --app-port 50054 --config ./configs/dapr-config.yaml -- go run ./cmd/server/parser/main.go
+
+.PHONY: start-translator
+start-translator:
+	echo "run translator"
+	dapr run --app-id translator --app-protocol grpc --app-port 50055 --config ./configs/dapr-config.yaml -- go run ./cmd/server/downloader/main.go
+
+.PHONY: start-analyzer
+start-analyzer:
+	echo "run analyzer"
+	dapr run --app-id analyzer --app-protocol grpc --app-port 50056 --config ./configs/dapr-config.yaml -- go run ./cmd/server/analyzer/main.go
+
 
 
 ##@ Update golang dependencies

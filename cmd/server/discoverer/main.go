@@ -3,61 +3,71 @@ package main
 import (
 	"climatewhopper/pkg/api"
 	"climatewhopper/pkg/newsparser"
-	"climatewhopper/pkg/util"
 	"climatewhopper/pkg/whopperutil"
 	"context"
 	"fmt"
-	"net"
 
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // implementedDiscoveryServer is used to implement Discovery function.
 type implementedDiscoveryServer struct {
-	logger *zap.SugaredLogger
+	clients *whopperutil.WhopperServerClients
+	config  *DiscovererServerConfig
 	api.UnimplementedDiscovererServer
 }
 
+// DiscovererServerConfig configuration which will be injected as dapr sidecar information
+type DiscovererServerConfig struct {
+	Spec struct {
+		Template struct {
+			Metadata struct {
+				Annotations struct {
+					AppID       string `mapstructure:"dapr.io/app-id"`
+					AppProtocol string `mapstructure:"dapr.io/app-protocol"`
+					AppPort     string `mapstructure:"dapr.io/app-port"`
+					LogLevel    string `mapstructure:"dapr.io/app-level"`
+				} `mapstructure:"annotations"`
+			} `mapstructure:"metadata"`
+		} `mapstructure:"template"`
+	} `mapstructure:"spec"`
+}
+
 func main() {
-	// TODO: think about refactore this part of the code as it will reappear almost the same in all of the servers
-	logger := util.GetLogger(util.MatchLogLevel(util.WrapLogLevel(viper.GetString("LogLevel"))))
+	// parse configuration file with viper
+	config := DiscovererServerConfig{}
+	whopperutil.SetViperCfg(fmt.Sprintf("dapr-%s-config", whopperutil.WhopperControllerDiscoverer), func() {}, &config)
 
-	// net listen
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", viper.GetInt("Port")))
+	// create clients for server
+	clients := whopperutil.GetWhopperClient(whopperutil.WhopperServerClientIn{
+		LogLevel:      config.Spec.Template.Metadata.Annotations.LogLevel,
+		SetDaprClient: true,
+	})
+	// close clients after server shutsdown
+	defer clients.Close()
+
+	// create grpc server (without starting it yet)
+	serverInit, err := whopperutil.CreateGrpcServer(config.Spec.Template.Metadata.Annotations.AppPort)
 	if err != nil {
-		logger.Fatalw("failed to listen", "error", err)
+		clients.Logger.Fatalw("could not create plain grpc server", "error", err)
 	}
 
-	// create new gRPC server
-	s := grpc.NewServer()
-	// Register server
-	api.RegisterDiscovererServer(s, &implementedDiscoveryServer{
-		logger: util.GetLogger(util.MatchLogLevel(util.WrapLogLevel(viper.GetString("LogLevel")))),
-	})
-	logger.Infow("server is listening", "address", lis.Addr())
-	if err := s.Serve(lis); err != nil {
-		logger.Fatalw("failed to server", "error", err)
-	}
+	// register grpc translator server
+	api.RegisterDiscovererServer(serverInit.Server, &implementedDiscoveryServer{clients: &clients, config: &config})
+
+	// start listening on port
+	serverInit.StartListening(clients.Logger)
 }
 
-func init() {
-	util.SetViperCfg(string(whopperutil.WhopperControllerDiscoverer), func() {
-		// set config defaults
-		viper.SetDefault("Port", 50055)
-		viper.SetDefault("LogLevel", util.Debug)
-		// set flags
-		pflag.Bool("test", false, "testmode")
-	})
-}
+//
+// Server Methods
+//
 
 func (s *implementedDiscoveryServer) Discover(ctx context.Context, in *api.DiscovererRequest) (*api.DiscovererResponse, error) {
+	// run batch discovery
 	unprocessedArticles, err := newsparser.BatchDiscovery(in.Info)
 	if err != nil {
-		s.logger.Errorw("could not run batch discovery")
+		s.clients.Logger.Errorw("could not run batch discovery")
 		return nil, err
 	}
 
