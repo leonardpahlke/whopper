@@ -6,9 +6,9 @@ NOCOLOR:=\\033[0m
 
 ##@ Verify application
 
-.PHONY: verify verify-build verify-golangci-lint verify-go-mod test-go-unit
+.PHONY: verify verify-build verify-golangci-lint verify-go-mod test-go-unit verify-eslint
 
-verify: verify-build verify-golangci-lint verify-go-mod test-go-unit
+verify: verify-build verify-golangci-lint verify-go-mod test-go-unit verify-eslint
 
 verify-build:
 	./scripts/verify-build.sh
@@ -18,6 +18,10 @@ verify-go-mod:
 
 verify-golangci-lint:
 	./scripts/verify-golangci-lint.sh
+
+verify-eslint:
+	npm run format
+	npm run lint -- --fix
 
 ##@ Tests & Verify application
 

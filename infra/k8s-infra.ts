@@ -1,20 +1,21 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { Infra, InfraConfig } from "./util";
+import Infra from "./util";
+import InfraConfig from "./config";
 
 /**
  * Kubernetes infrastructure input
  */
-export interface IK8sInput {
-    kubeconfig: pulumi.Output<string>;
-}
+export type IK8sInput = {
+  kubeconfig: pulumi.Output<string>;
+};
 
 /**
  * Kubernetes infrastructure output
  */
-export interface IK8sOutput {
-    namespaceName: pulumi.Output<string>;
-}
+export type IK8sOutput = {
+  namespaceName: pulumi.Output<string>;
+};
 
 /**
  * Kubernetes infrastructure class that implements the abstract class infra
@@ -22,32 +23,30 @@ export interface IK8sOutput {
  *  - namespace
  */
 export class K8sInfra extends Infra {
-    private in: IK8sInput;
-    constructor(config: InfraConfig, input: IK8sInput) {
-        super(config);
-        this.in = input;
-    }
+  private in: IK8sInput;
 
-    create(): IK8sOutput {
-        // Create a Kubernetes provider instance that uses our cluster from above.
-        const clusterProvider = new k8s.Provider(
-            this.GetName("k8s", "provider"),
-            {
-                kubeconfig: this.in.kubeconfig,
-            }
-        );
+  constructor(config: InfraConfig, input: IK8sInput) {
+    super(config);
+    this.in = input;
+  }
 
-        // Create a Kubernetes Namespace
-        const ns = new k8s.core.v1.Namespace(
-            this.GetName("ns"),
-            {},
-            { provider: clusterProvider }
-        );
+  create(): IK8sOutput {
+    // Create a Kubernetes provider instance that uses our cluster from above.
+    const clusterProvider = new k8s.Provider(this.GetName("k8s", "provider"), {
+      kubeconfig: this.in.kubeconfig,
+    });
 
-        // Export the Namespace name
-        const namespaceName = ns.metadata.apply((m) => m.name);
+    // Create a Kubernetes Namespace
+    const ns = new k8s.core.v1.Namespace(
+      this.GetName("ns"),
+      {},
+      { provider: clusterProvider }
+    );
 
-        // set k8s-infra output
-        return { namespaceName };
-    }
+    // Export the Namespace name
+    const namespaceName = ns.metadata.apply((m) => m.name);
+
+    // set k8s-infra output
+    return { namespaceName };
+  }
 }

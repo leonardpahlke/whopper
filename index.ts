@@ -12,6 +12,6 @@ const gcpInfraOut = new GcpInfra(infraConfig, {}).create();
 
 // Kubernetes on GKE cluster
 // * namespace
-const k8sInfraOut = new K8sInfra(infraConfig, {
-    kubeconfig: gcpInfraOut.kubeconfig,
+new K8sInfra(infraConfig, {
+  kubeconfig: gcpInfraOut.kubeconfig,
 }).create();
