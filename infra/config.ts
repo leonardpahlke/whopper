@@ -9,6 +9,7 @@ export type IInfraVars = {
   machineType: string; // "n1-standard-1",
 };
 
+
 /**
  * InfraConfig used to translate pulumi configuration and get injected into k8s infra set-ups
  */

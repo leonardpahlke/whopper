@@ -6,9 +6,8 @@ NOCOLOR:=\\033[0m
 
 ##@ Verify application
 
-.PHONY: verify verify-build verify-golangci-lint verify-go-mod test-go-unit verify-eslint
-
-verify: verify-build verify-golangci-lint verify-go-mod test-go-unit verify-eslint
+.PHONY: verify verify-build verify-golangci-lint verify-go-mod test-go-unit
+verify: verify-build verify-golangci-lint verify-go-mod test-go-unit
 
 verify-build:
 	./scripts/verify-build.sh
@@ -19,6 +18,7 @@ verify-go-mod:
 verify-golangci-lint:
 	./scripts/verify-golangci-lint.sh
 
+.PHONY: verify-eslint
 verify-eslint:
 	npm run format
 	npm run lint -- --fix
@@ -75,6 +75,26 @@ start-analyzer:
 	echo "run analyzer"
 	dapr run --app-id analyzer --app-protocol grpc --app-port 50056 --config ./configs/dapr-config.yaml -- go run ./cmd/server/analyzer/main.go
 
+
+##@ Deploy project to local cluster
+
+.PHONY: start-local-cluter
+start-local-cluter: kind create cluster
+
+
+.PHONY: deploy-local
+deploy-local: pulumi up -s local -y -c kconfig="$(kubectl config view --raw=true)"
+
+.PHONY: destroy-local
+destroy-local: pulumi destroy -s local -y
+
+##@ Deploy project to GKE cluster
+
+.PHONY: deploy-prd
+deploy-local: pulumi up -s prd -y
+
+.PHONY: destroy-prd
+destroy-local: pulumi destroy -s prd -y
 
 
 ##@ Update golang dependencies

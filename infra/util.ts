@@ -1,4 +1,4 @@
-import InfraConfig from './config';
+import InfraConfig from "./config";
 
 /**
  * Abstract class used for infrastructure definitions
@@ -25,3 +25,4 @@ export default abstract class Infra {
     return `${this.config.projectName}${separator}${this.config.env}${separator}${serviceName}${idString}`;
   }
 }
+
