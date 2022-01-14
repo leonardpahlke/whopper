@@ -17,6 +17,8 @@ Required installations:
 -   To interact with the kubernetes cluster `kubectl` is used: [installation guide]()
 -   `dapr` is used as well: [installation guide]()
 
+Export you pulumi access token as environment variable (only needed once at startup) .
+
 To check if all application have been downloaded you can run:
 
 ```bash
@@ -31,10 +33,35 @@ TODO: ...
 make install
 ```
 
+## Prerequesits
+
+
+
+## How to use it
+
+### Bootstrapping
+setup system for the first time 
+
 ```bash
-# TODO: ...
-npm install
+export PULUMI_ACCESS_TOKEN=pul-XYZXYZXYZXYZXYZXYZ
+task init-pulumi-project 
 go get ./...
+```
+
+### System updates
+operation
+
+```bash
+TODO: ...
+```
+
+To access kubernetes cluster 
+
+### Cleanup
+destroy created it resources
+
+```bash
+TODO: ...
 ```
 
 clone googleapis to be able to compile the `./api/whopper.proto` file

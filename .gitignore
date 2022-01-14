@@ -1,9 +1,19 @@
 *.txt
+
+# Golang test coverage output
 coverage.html
 coverage.out
 
+# VisualStudio code settings
 .vscode/
+
+# Taskfile.dev checksum output
+.task/
 
 # Local History for Visual Studio Code
 .history/
+
 /node_modules/
+
+# Local kubeconfig should not be added to VCS
+.kube/config

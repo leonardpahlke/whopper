@@ -29,7 +29,7 @@ verify-eslint:
 test-go-unit:
 	./scripts/verify-test-go.sh
 
-##@ Project setup and stallation
+##@ Project setup and installation
 
 .PHONY: install-verify
 install-verify:
@@ -42,6 +42,29 @@ install:
 .PHONY: compile-grpc
 compile-grpc:
 	protoc -I=. -I=$(GOPATH)/googleapis/ --go_out=pkg/ --go_opt=paths=source_relative --go-grpc_out=pkg/ --go-grpc_opt=paths=source_relative api/whopper.proto
+
+.PHONY: init-setup-pulumi
+init-setup-pulumi:
+	echo "This setup has only to be run once per environment (prd, dev) after that an automation should handle updates!"
+	echo "Enter pulumi access token which will be set as secret"
+	read accessToken
+	echo "Enter git repository URL like 'https://github.com/xyzuser/repo'"
+	read projectRepo
+	echo "Enter commit SHA which should be deployed like 'b19759220f25476605620fdfffeface39a630246'"
+	read commitSHA
+	stackName="whopper-infra"
+	echo "stack name set to $stackName"
+	echo "Enter which deployment environment like 'dev, prd'"
+	read deployEnv
+	echo "Set configuratgion..."
+	pulumi config set --secret pulumiAccessToken $accessToken
+	pulumi config set stackProjectRepo $projectRepo
+	pulumi config set stackCommit $commitSHA
+	pulumi config set stackName $stackName/dev
+	echo "config set, deploy cluster"
+	pulumi up
+	echo "check if operator is running"
+	kubectl get pods -o wide -l name=pulumi-kubernetes-operator
 
 ##@ Start dapr apk locally
 
@@ -83,7 +106,10 @@ start-local-cluter: kind create cluster
 
 
 .PHONY: deploy-local
-deploy-local: pulumi up -s local -y -c kconfig="$(kubectl config view --raw=true)"
+deploy-local:
+	echo "deploy whopper infrastructure to local system"
+	pulumi config set kconfig="$(kubectl config view --raw=true)" --secret -s local
+	pulumi up -s local -y
 
 .PHONY: destroy-local
 destroy-local: pulumi destroy -s local -y
