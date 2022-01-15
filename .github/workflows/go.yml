@@ -13,6 +13,9 @@ jobs:
 
             - name: Check out code into the Go module directory
               uses: actions/checkout@v1
+            
+            - name: Install taskfile
+              run: go install github.com/go-task/task/v3/cmd/task@latest
 
-            - name: Make verify
-              run: make verify
+            - name: Verify
+              run: task verify-go
