@@ -22,7 +22,7 @@ export default class InfraConfig {
     const pulumiConfig = new pulumi.Config();
     this.vars = pulumiConfig.requireObject<IInfraVars>("vars");
 
-    this.projectName = pulumiConfig.get("name") ?? "whopper-infra";
+    this.projectName = pulumiConfig.get("name") ?? "whopper";
     this.env = pulumiConfig.get("env") ?? "prd";
   }
 }

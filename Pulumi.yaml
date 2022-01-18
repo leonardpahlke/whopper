@@ -1,3 +1,3 @@
-name: whopper-infra
+name: whopper
 runtime: nodejs
-description: climate whopper kubernetes gcp infra
+description: Whopper project gcp and kubernetes infrastructure

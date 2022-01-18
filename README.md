@@ -1,54 +1,96 @@
-# Climate Whopper
+# Whopper
 
 !!! Project under active development !!!
 
-TODO: README...
-
 Overview: ...
 
-## Getting started
+---
 
-Required installations:
+## Installation and project setup
 
--   Pods are written in `go`: [installation guide]()
--   To manage infrastructure `pulumi` is used: [installation guide]()
--   Pulumi uses `node`: [installation guide]()
--   As this project uses GCP the CLI `gcloud` is used: [installation guide]()
--   To interact with the kubernetes cluster `kubectl` is used: [installation guide]()
--   `dapr` is used as well: [installation guide]()
+Before creating the infrastructure and start processing articles make sure to walk over the following sections of this chapter.
+- [Whopper](#whopper)
+  - [Installation and project setup](#installation-and-project-setup)
+    - [Required installations](#required-installations)
+    - [Used environment variables](#used-environment-variables)
+    - [Install local dependencies](#install-local-dependencies)
+  - [Project lifecycle](#project-lifecycle)
+    - [Bootstrapping](#bootstrapping)
+    - [Operation Phase](#operation-phase)
+    - [Cleanup](#cleanup)
 
-Export you pulumi access token as environment variable (only needed once at startup) .
+After that go a head to the next chapter [Project lifecycle](#project-lifecycle).
 
-To check if all application have been downloaded you can run:
+### Required installations
 
-```bash
-TODO: ...
-make install-verify
+-  `go` for application logic is used: [installation guide]()
+-  `pulumi` as infrastructure as code (IaC) tool is used: [installation guide]()
+-  `node` and `npm` is used to describe Pulumi IaC: [installation guide]()
+-  `gcloud` CLI is used to access resources created in gcp: [installation guide]()
+-  `kubectl` is used to interact with created kubernetes clusters: [installation guide]()
+-  `task` is used instead of a makefile to install, verify, build and in general maintain the project: [installation guide]()
+-  `protoc` is used to compile proto3 api file: [installation guide](https://grpc.io/docs/protoc-installation/)
+
+You can check if installations are met by running `sh ./scripts/check-installations.sh` or `task check-installations`.
+
+```
+$ task -l
+task: Available tasks for this project:
+* bootstrap: 	Initialize project and create it resources
+* cleanup: 	delete created it-resources
+* install: 	Install dependencies and setup project
+* k-op: 	kubectl wrapper to interact with operator cluster
+* update: 	update project dependencies
+* verify: 	Run all verify and test tasks
+* verify-go: 	Run golang verify and test tasks
 ```
 
-To install all project dependencies you can run:
+### Used environment variables
 
-```bash
-TODO: ...
-make install
-```
+A couple of environment variables are **required**.
 
-## Prerequesits
+- Export you pulumi access token as environment variable `export PULUMI_ACCESS_TOKEN=XXXXXXX`.
+- Make sure `GOPATH` is set; check via `echo $GOPATH`
 
 
+### Install local dependencies
 
-## How to use it
+To install depenencies locally use the task file run `task install`
+This will do the following this for you:
+- Install go libraries
+- Install npm libraries locally
+- Clone project [googleapi]() which is used to build parts of the whopper api (see [api proto3 file](./api/whopper.proto))
+- Compile proto3 golang code
+
+---
+
+## Project lifecycle
+
+The lifecycle of this project is desirbed in more detail in one of the docs documents [see docs/project-lifecycle](./docs/project-lifecylce-phases.md).
+
+![Project lifecycle overview](./assets/consider-cloud-native-ops.png)
+
+A brief summary of each phase is given in the sections:
+- [Bootstrapping](#bootstrapping)
+- [Operation Phase](#operation-phase)
+- [Cleanup](#cleanup)
 
 ### Bootstrapping
-setup system for the first time 
+Setup infrastructure for the fist time.
+There are two different types of infrastructure deployments. 
+
+1. **Production deployment**: The production deployment is on going and uses the pulumi kubernetes operator. The operator watches the `main` branch for updates. Production infrastructure is build to stay with rolling blue-green updates.
+2. **Feature test deployment**: The feature test deployment is a short term infrastructure test. It is used whenever a commit is pushed to any other branch then main. The infrastructure is deployed, tested and then destroyed. If these phases succeed without any error the feature is considered "bug free" and can be merged to `main`.
+
+There are two tasks available adressing both deployment types:
 
 ```bash
-export PULUMI_ACCESS_TOKEN=pul-XYZXYZXYZXYZXYZXYZ
 task init-pulumi-project 
-go get ./...
 ```
 
-### System updates
+TODO: ...
+
+### Operation Phase
 operation
 
 ```bash
@@ -63,87 +105,3 @@ destroy created it resources
 ```bash
 TODO: ...
 ```
-
-clone googleapis to be able to compile the `./api/whopper.proto` file
-TODO: explanation: as the whopper system is using google cloud services to run analytics, the analytics response works directly with that ...
-
-```bash
-git clone https://github.com/googleapis/googleapis $GOPATH/googleapis
-```
-
-2. Login to google cloud via the `gcloud` CLI
-
-```bash
-gcloud auth login
-# if you don't have project yet, create one
-gcloud config set project <YOUR_GCP_PROJECT_HERE>
-gcloud auth application-default login
-```
-
-3. Configure project (see Configuration section)
-4. Deployment (see Deployment section)
-
-### Configuration
-
-The project can be configured infrastructure and application wise.
-
-#### Infrastructure configuration
-
-TODO: ...Infrastructure configuration
-
-The infrastructure uses pulumi and therefore the provided pulumi configuration.
-
-gcloud config set project <GCP-PROJECT-ID>
-
-To get kubernetes credentials you can run
-
-```bash
-gcloud container clusters get-credentials <cluster> --zone <cluster zone> --project <gcp project>
-```
-
-#### Application configuration
-
-TODO: ...Application configuration
-
-### Deployment
-
-#### Local testing
-
-#### Deployment
-
-## Architecture
-
-The architecture is shown in multiple diagrams to provide different level of complexity and the opportunity to highlight different parts of the system.
-
-### Component overview
-
-As this system has been reconstructed from an AWS Project, first the AWS components will be given.
-The following diagram shows the overall system architecture of the AWS system. To understand the interaction between the components, arrows have been provided with numbers showing a flow (1..9), after the diagram follows an explanation point by point.
-
-![General AWS System Overview](./assets/consider-cloud-native-aws-system-overview.png)
-
-1. After a scheduled routine the crawler hub starts
-2. To avoid scanning the entire newspaper website the latest newspaper article will be provided as stopping point
-3. The crawler hub notifies the discoverer to scan a newspaper website. One call per newspaper website
-4. The discoverer scrapes a newspaper website and checks stores all articles that has been published since the latest article
-5. New unprocessed articles are getting feed into the crawler engine
-6. Download raw html article from newspaper website
-7. After article processing is over the data will be stored in the article data, database
-8. The article status will be updated to avoid processing the article multiple times
-9. The data representation can call async the article data for visualization
-
-As this diagram just shows the AWS components the next diagram will show the cloud native artictecture components.
-
-### Cloud Native architecture
-
-TODO:...
-
-## Project structure
-
-Now as the overall project idea and architecture has been discussed. The project structure will be highligted to support navigating through the project.
-
-TODO: ...Project structure (tree)
-
-## Local testing
-
-TODO: ...local testing
