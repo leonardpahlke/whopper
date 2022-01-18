@@ -1,39 +1,80 @@
-import { getStack, all, Config } from "@pulumi/pulumi";
+import * as pulumi from "@pulumi/pulumi";
+import * as kx from "@pulumi/kubernetesx";
+import * as k8s from "@pulumi/kubernetes";
 import InfraConfig from "./infra/config";
 import { GcpInfra } from "./infra/gcp-infra";
 import { K8sInfra } from "./infra/k8s-infra";
+import * as operator from "./infra/operator";
 
-// pulumi stacks 
-const localStack = "local"
 const prdStack = "prd"
+const stack = pulumi.getStack();
 
-// get stack name
-const stack = getStack();
+//
+// PULUMI KUBERNETES OPERATOR
+//  The pulumi operator gets deployed to a seperate kubernetes cluster and checks periodically for 
+//  new resources in a referenced git repository. Resources can be anything defined in pulumi including
+//  other kubernetes cluster and cross cloud provider services. 
+//
+if (stack === prdStack) {
+  // access pulumi configuration
+  const config = new pulumi.Config();
 
-if (stack !== localStack && stack !== prdStack) {
-  throw new Error("Stack unrecognized configure stack infrastructure first")
+  const pulumiAccessToken = config.requireSecret("pulumiAccessToken");
+  const stackName = config.require("stackName");
+  const stackProjectRepo = config.require("stackProjectRepo");
+  const stackCommit = config.require("stackCommit");
+  const operatorKubeconfig = config.requireSecret("operatorKubeconfig");
+  const operatorPodName = config.require("operatorPodName")
+
+  const provider = new k8s.Provider("k8s", {kubeconfig: operatorKubeconfig}); 
+
+  // Create the Pulumi Kubernetes Operator
+  const pulumiOperator = new operator.PulumiKubernetesOperator(operatorPodName, {
+      namespace: "default",
+      provider,
+  });
+
+  // Create the API token as a Kubernetes Secret.
+  const apiAccessToken = new kx.Secret("accesstoken", {
+    stringData: { accessToken: pulumiAccessToken},
+  });
+
+  // Create a Blue/Green app deployment in-cluster.
+  const appStack = new k8s.apiextensions.CustomResource("app-stack", {
+    apiVersion: 'pulumi.com/v1',
+    kind: 'Stack',
+    spec: {
+        envRefs: {
+            PULUMI_ACCESS_TOKEN: {
+                type: "Secret",
+                secret: {
+                    name: apiAccessToken.metadata.name,
+                    key: "accessToken",
+                },
+            },
+        },
+        stack: stackName,
+        projectRepo: stackProjectRepo,
+        commit: stackCommit,
+        destroyOnFinalize: true,
+    }
+  }, {dependsOn: pulumiOperator.deployment});
+  appStack.id.get()
 }
 
-// create infrastructure config used to get pulumi config
-// this class is being injected into gcp-infra & k8s-infra
+//
+// PROJECT INFRASTRUCTURE RESOURCES
+//  Infrastructure setup which is getting deployed by the pulumi k8s operator.
+//  The infrastructure describes the system which is used to process articles.
+//
+// infraConfig accesses pulumi configuration
 const infraConfig = new InfraConfig();
 
-// create empty
-let clusterKubeconfig = all([]).apply(([]) => "");
-
 // manage kubernetes infrastructure
-if (stack === prdStack) {
-  // use the GKE cluster
-  const gcpInfraOut = new GcpInfra(infraConfig, {}).create();
-  clusterKubeconfig = gcpInfraOut.kubeconfig
-} else if (stack === localStack) {
-  // use local cluster
-  const pulumiConfig = new Config()
-  clusterKubeconfig = pulumiConfig.requireSecret("kconfig");
-}
+const gcpInfraOut = new GcpInfra(infraConfig, {}).create();
+const clusterKubeconfig = gcpInfraOut.kubeconfig
 
-// Configure Kubernetes
-// * namespace
+// Configure Kubernetes cluster
 new K8sInfra(infraConfig, {
   kubeconfig: clusterKubeconfig,
 }).create();

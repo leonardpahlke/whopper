@@ -3,6 +3,7 @@ version: '3'
 vars:
   PROJECT_NAME: "climate-whopper"
   OPERATOR_CLUSTER_NAME: "whopper-operator-cluster"
+  OPERATOR_POD_NAME: "pulumi-kubernetes-operator"
   OPERATOR_CLUSTER_MACHINE_TYPE: "n1-standard-1"
   OPERATOR_CLUSTER_REGION: "europe-west3"
   OPERATOR_CLUSTER_INITIAL_NODE_COUNT: 1
@@ -34,8 +35,6 @@ tasks:
 
   verify-go-mod:
     cmds: 
-      - set -o errexit
-      - set -o pipefail
       - go mod tidy
       - go mod verify
     sources:
@@ -59,7 +58,7 @@ tasks:
     desc: kubectl wrapper to interact with operator cluster
     cmds:
       - kubectl {{.CLI_ARGS}} --kubeconfig {{.LOCAL_KUBECONFIG_PATH}}
-  
+
   # UPDATE dependencies
   update:
     desc: update project dependencies
@@ -112,38 +111,50 @@ tasks:
     generates:
       - "{{.LOCAL_KUBECONFIG_PATH}}"
 
+  compile-grpc:
+    cmds:
+      - protoc -I=. -I=$(GOPATH)/googleapis/ --go_out=pkg/ --go_opt=paths=source_relative --go-grpc_out=pkg/ --go-grpc_opt=paths=source_relative api/whopper.proto
+
   init-pulumi-project:
     cmds:
-      - echo "init pulumi settings for project"
+      - echo "Set operator pulumi config"
       - pulumi config set --secret pulumiAccessToken {{.PULUMI_ACCESS_TOKEN}}
       - pulumi config set stackProjectRepo {{.PROJECT_REPO}}
       - pulumi config set stackCommit {{.COMMIT_SHA}}
-      - pulumi config set stackName {{.PULUMI_STACK_NAME}}/{{.ENV}}
+      - pulumi config set stackName {{.PULUMI_ORG}}/{{.PULUMI_STACK_NAME}}/{{.ENV}}
+      - pulumi config set operatorPodName {{.OPERATOR_POD_NAME}}}
+      - pulumi config set --secret operatorKubeconfig $(cat {{.LOCAL_KUBECONFIG_PATH}})
       - echo "pulumi config set, deploy pulumi operator to cluster"
       - task: pulumi-up
       - echo "check if operator is running"
-      - kubectl get pods -o wide -l name=pulumi-kubernetes-operator
+      - task: k-op -- get pods -o wide -l name={{.OPERATOR_POD_NAME}}
     vars:
+      PULUMI_ORG: leonardpahlke
       PULUMI_ACCESS_TOKEN:
         sh: $PULUMI_ACCESS_TOKEN
       COMMIT_SHA:
         sh: git rev-parse HEAD
       PROJECT_REPO: "https://github.com/leonardpahlke/climate-whopper"
       PULUMI_STACK_NAME: "whopper-infra"
+    sources:
+      - "{{.LOCAL_KUBECONFIG_PATH}}"
+
+  operator-logs:
+    cmds:
+      - task: k-op -- logs -l name={{.OPERATOR_POD_NAME}} -f
 
   pulumi-up:
     cmds:
       - pulumi up -s {{.ENV}} -y
 
-  # Cleanup tasks
+  # CLEANUP
   cleanup:
     desc: delete created it-resources
     cmds:
-      - task: delete-gke
       - task: pulumi-destroy
+      - task: delete-operator-cluster
 
-  delete-gke:
-    desc: Delete the GKE cluster used to host the project
+  delete-operator-cluster:
     cmds:
       - echo "Delete {{.ENV}} GKE cluster {{.OPERATOR_CLUSTER_NAME}}-{{.ENV}}"
       - gcloud container clusters delete {{.OPERATOR_CLUSTER_NAME}}-{{.ENV}} --region {{.OPERATOR_CLUSTER_REGION}} --project {{.GCP_PROJECT}}
@@ -154,3 +165,4 @@ tasks:
   pulumi-destroy:
     cmds:
       - pulumi destroy -s {{.ENV}} -y
+      - pulumi stack -s {{.ENV}} rm -y

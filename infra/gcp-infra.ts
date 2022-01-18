@@ -1,6 +1,6 @@
 import * as gcp from "@pulumi/gcp";
 import * as pulumi from "@pulumi/pulumi";
-import Infra from "./util";
+import Infra from "./abstract-infra";
 import InfraConfig from "./config";
 
 /**

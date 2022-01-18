@@ -4,11 +4,9 @@ import * as pulumi from "@pulumi/pulumi";
 export type IInfraVars = {
   zone: string;
   region: string;
-
   initialNodeCount: number; // 2
   machineType: string; // "n1-standard-1",
 };
-
 
 /**
  * InfraConfig used to translate pulumi configuration and get injected into k8s infra set-ups

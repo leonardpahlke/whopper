@@ -1,5 +1,5 @@
 name: VERIFY
-on: [push]
+on: [push,pull_request]
 jobs:
     build:
         name: Build
@@ -16,6 +16,9 @@ jobs:
             
             - name: Install taskfile
               run: go install github.com/go-task/task/v3/cmd/task@latest
+
+            - name: List tasks
+              run: task -l
 
             - name: Verify
               run: task verify-go

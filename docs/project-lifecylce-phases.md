@@ -1,19 +1,19 @@
 ## Project lifecycle
+
 The project is divided into three major lifecycle phases. 
+
 1. During the bootstrapping phase, the project infrastructure and services are set up. The phase is completed when the system can be used normally for the first time.
 2. In the second phase, the operational phase, the system is used after the initial setup. During this phase, the infrastructure and the system are used and managed (including updates).
 3. The last phase, the clean-up phase, is initiated when the entire project system is deleted. The phase is complete when all resources initially deployed and after updates across the infrastructure systems in use have been deleted.
 
-A general overview is provided below.
+A general overview descriping the phases is given below.
 
-...
-TODO: add project lifecycle overview
+![Project lifecycle overview](../assets/consider-cloud-native-ops.png)
 
-The phases are described in the next chapters with additional diagrams.
-
-Translated with www.DeepL.com/Translator (free version)
+To give a bit more detail, each phase is described in more depth in the next chapters.
 
 ## Bootstrapping Phase
+
 ```mermaid
 %%{init: {
     'theme': 'base', 
@@ -102,7 +102,11 @@ flowchart TD
     cleanup --> finish[END]
 ```
 
-TODO: walk over the steps one by one
+The operation phase starts after the bootstrapping phase. 
+
+1. **Checkout to main branch** `git checkout main` ensure latest version `git fetch` and pull latest changes (only needed if local version is behind main branch on VCS) `git pull main`
+
+2. ...
 
 ## Cleanup
 
@@ -129,7 +133,7 @@ stateDiagram-v2
     fork_state --> DestroyPulumiStack
     fork_state --> DisableGithubAutomations 
     DestroyPulumiStack --> DestroyK8sCluster
-    
+
     state join_state <<join>>
     DestroyK8sCluster --> join_state
     DisableGithubAutomations --> join_state

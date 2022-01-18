@@ -1,6 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import Infra from "./util";
+import Infra from "./abstract-infra";
 import InfraConfig from "./config";
 
 /**
