@@ -1,0 +1,13 @@
+{
+    "name": "whopper-infra",
+    "devDependencies": {
+        "@types/node": "^14"
+    },
+    "dependencies": {
+        "@pulumi/gcp": "^6.3.1",
+        "@pulumi/kubernetes": "^3.14.1",
+        "@pulumi/kubernetesx": "^0.1.6",
+        "@pulumi/pulumi": "^3.19.0",
+        "tslint": "^6.1.3"
+    }
+}

@@ -1,177 +1,63 @@
-version: '3'
+version: "3"
+
+includes:
+  verify: ./scripts/Taskfile-verify.yml
+  deploy: ./scripts/Taskfile-deploy.yml
+  destroy: ./scripts/Taskfile-destroy.yml
 
 vars:
   PROJECT_NAME: "whopper"
-  OPERATOR_CLUSTER_NAME: "whopper-operator-cluster"
+  OPERATOR_CLUSTER_NAME: "operator-cluster"
+  WHOPPER_CLUSTER_NAME: "whopper-cluster"
   OPERATOR_POD_NAME: "pulumi-kubernetes-operator"
   OPERATOR_CLUSTER_MACHINE_TYPE: "n1-standard-1"
   OPERATOR_CLUSTER_REGION: "europe-west3"
-  OPERATOR_CLUSTER_INITIAL_NODE_COUNT: 1
+  CLUSTER_ZONE: "europe-west3-b"
+  OPERATOR_CLUSTER_NODE_COUNT: 1
   GCP_PROJECT: "liquid-leonard-pahlke-302"
-  ENV: '{{default "prd" .ENV}}'
-  PRD: "prd"
-  LOCAL_KUBECONFIG_PATH:
-    sh: echo $(pwd)'/.kube/config'
-  OPERATOR_CLUSTER_CREATED_PATH:
-    sh: echo $(pwd)'/.kube/cluster-created'
+  GLOBAL_ENV:
+    sh: echo $(git rev-parse --abbrev-ref HEAD)
+  LOCAL_WHOPPER_KUBECONFIG_PATH:
+    sh: echo $(pwd)'/.kube/whopper-config'
+  LOCAL_OPERATOR_KUBECONFIG_PATH:
+    sh: echo $(pwd)'/.kube/operator-config'
+  GLOBAL_OPERATOR_INFRA_PATH:
+    sh: echo $(pwd)'/operator-infra'
+  GLOBAL_WHOPPER_INFRA_PATH:
+    sh: echo $(pwd)'/whopper-infra'
 
 tasks:
-  check-installations:
-    desc: Run this task to check if required tools have been installed
-    cmds:
-      - sh ./scripts/check-installations.sh
-
-  install:
-    desc: Install dependencies and setup project, can also be used to update the dependencies
-    cmds:
-      - echo "Install libraries with npm used to build IaC with pulumi"
-      - task: install-ts
-      - echo "Install and update golang dependencies"
-      - task: update-deps-go
-      - echo "Pull googleapi repositorty as it is getting used to build the whopper API"
-      - task: pull-googleapi-repo
-      - echo "Compile grpc api code"
-      - task: compile-grpc
-
-  install-ts:
-    cmds:
-      - npm install
-    sources:
-      - ./*.ts
-    generates:
-      - package-lock.json
-      - package.json
-  
-  pull-googleapi-repo:
-    cmds:
-      - git clone https://github.com/googleapis/googleapis {{.GOPATH}}/googleapis
-    generates:
-      - "{{.GOPATH}}/googleapis"
-    vars:
-      GOPATH:
-        sh: echo $GOPATH
-  
-  compile-grpc:
-    cmds:
-      - protoc -I=. -I=$(GOPATH)/googleapis/ --go_out=pkg/ --go_opt=paths=source_relative --go-grpc_out=pkg/ --go-grpc_opt=paths=source_relative api/whopper.proto
-    sources:
-      - ./api/whopper.proto
-    generates:
-      - ./pkg/api/*.go
-    vars:
-      GOPATH:
-        sh: echo $GOPATH
-
-  verify:
-    desc: Run all verify and test tasks
-    cmds:
-      - task: verify-go
-      - task: verify-eslint
-
-  verify-go:
-    desc: Run golang verify and test tasks
-    cmds:
-      - task: verify-build
-      - task: verify-go-mod
-      - task: verify-golangci-lint
-      - task: test-go-unit
-
-  verify-build:
-    cmds: 
-      - ./scripts/verify/verify-build.sh
-    sources:
-      - ./*.go
-
-  verify-go-mod:
-    cmds: 
-      - go mod tidy
-      - go mod verify
-    sources:
-      - ./*.go
-
-  verify-golangci-lint:
-    cmds: 
-      - ./scripts/verify/verify-golangci-lint.sh
-    sources:
-      - ./*.go
-
-  verify-eslint:
-    cmds: 
-      - npm run format
-      - npm run lint -- --fix
-    sources:
-      - ./*.ts
-
-  k-op:
+  kubectl-o:
     desc: kubectl wrapper to interact with operator cluster
     cmds:
-      - kubectl {{.CLI_ARGS}} --kubeconfig {{.LOCAL_KUBECONFIG_PATH}}
-
-  update-deps-go:
-    cmds:
-      - go get -u -t ./...
-      - task: verify-go-mod
+      - kubectl {{.CLI_ARGS}} --kubeconfig {{.LOCAL_OPERATOR_KUBECONFIG_PATH}}
     sources:
-      - ./*.go
-    generates:
-      - go.mod
-      - go.sum
+      - "{{.LOCAL_OPERATOR_KUBECONFIG_PATH}}"
 
-  # TEST
-  test-go-unit:
-    cmds: 
-      - ./scripts/verify/verify-test-go.sh
+  kubectl-w:
+    desc: kubectl wrapper to interact with the whopper cluster
+    cmds:
+      - kubectl {{.CLI_ARGS}} --kubeconfig {{.LOCAL_WHOPPER_KUBECONFIG_PATH}}
     sources:
-      - ./*.go
-    generates:
-      - ./coverage.html
-      - ./coverage.out
+      - "{{.LOCAL_WHOPPER_KUBECONFIG_PATH}}"
 
-  # Bootstrap tasks
-  bootstrap-prd:
-    desc: Initialize project for production
+  init-project:
     cmds:
-      - echo "Create Kubernetes cluster to host pulumi operator"
-      - task: create-operator-cluster ENV={{.PRD}}
-      - task: init-pulumi-project
-
-  bootstrap-feature:
-    desc: Deploy temporary whopper project for testing purposes
-
-  create-operator-cluster: 
-    cmds: 
-      - echo "Enable gcp container api"
-      - gcloud services enable container.googleapis.com
-      - echo "Deploy {{.ENV}} GKE cluster"
-      - gcloud container clusters create {{.OPERATOR_CLUSTER_NAME}}-{{.ENV}} --num-nodes={{.OPERATOR_CLUSTER_INITIAL_NODE_COUNT}} --region={{.OPERATOR_CLUSTER_REGION}} --machine-type={{.OPERATOR_CLUSTER_MACHINE_TYPE}} --no-enable-ip-alias --project {{.GCP_PROJECT}}
-      - echo "Get credentials to access the cluster with kubectl"
-      - gcloud config set container/use_application_default_credentials true
-      - task: pull-kubernetes-operator-cluster-config
-      - echo "Do not edit this file, it has been automatically generated!" > "{{.OPERATOR_CLUSTER_CREATED_PATH}}"
-    generates:
-      - "{{.OPERATOR_CLUSTER_CREATED_PATH}}"
-      - "{{.LOCAL_KUBECONFIG_PATH}}"
-
-  pull-kubernetes-operator-cluster-config:
-    cmds:
-      - echo "Get a local kubeconfig copy to access the operator GKE cluster"
-      - KUBECONFIG={{.LOCAL_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.OPERATOR_CLUSTER_NAME}}-{{.ENV}} --region={{.OPERATOR_CLUSTER_REGION}} --project {{.GCP_PROJECT}}
-    generates:
-      - "{{.LOCAL_KUBECONFIG_PATH}}"
-
-  init-pulumi-project:
-    cmds:
-      - echo "Set operator pulumi config"
-      - pulumi config set --secret pulumiAccessToken {{.PULUMI_ACCESS_TOKEN}}
-      - pulumi config set stackProjectRepo {{.PROJECT_REPO}}
-      - pulumi config set stackCommit {{.COMMIT_SHA}}
-      - pulumi config set stackName {{.PULUMI_ORG}}/{{.PULUMI_STACK_NAME}}/{{.ENV}}
-      - pulumi config set operatorPodName {{.OPERATOR_POD_NAME}}}
-      - pulumi config set --secret operatorKubeconfig $(cat {{.LOCAL_KUBECONFIG_PATH}})
-      - echo "pulumi config set, deploy pulumi operator to cluster"
-      - task: pulumi-up
-      - echo "check if operator is running"
-      - task: k-op -- get pods -o wide -l name={{.OPERATOR_POD_NAME}}
+      - echo "Project initialization happens from main, after that features are be implemented and tested on other branches"
+      - git checkout main
+      - echo "Deploy operator cluster"
+      - task: deploy:operator
+      - echo "Set pulumi config to deploy whopper"
+      - pulumi config set --secret pulumiAccessToken {{.PULUMI_ACCESS_TOKEN}} -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
+      - pulumi config set stackProjectRepo {{.PROJECT_REPO}} -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
+      - pulumi config set stackCommit {{.COMMIT_SHA}} -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
+      - pulumi config set stackName {{.PULUMI_ORG}}/{{.PULUMI_STACK_NAME}}/{{.ENV}} -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
+      - pulumi config set operatorPodName {{.OPERATOR_POD_NAME}}} -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
+      - pulumi config set --secret operatorKubeconfig $(cat {{.LOCAL_KUBECONFIG_PATH}}) -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
+      - echo "pulumi config set, deploy pulumi whopper project to cluster. The whopper on the main branch also deploys the pulumi kubernetes operator to the operator cluster"
+      - task: deploy:whopper
+      - echo "check if operator pods is running in the operator cluster"
+      - task: kubectl-o -- get pods -o wide -l name={{.OPERATOR_POD_NAME}}
     vars:
       PULUMI_ORG: leonardpahlke
       PULUMI_ACCESS_TOKEN:
@@ -180,34 +66,9 @@ tasks:
         sh: git rev-parse HEAD
       PROJECT_REPO: "https://github.com/leonardpahlke/whopper"
       PULUMI_STACK_NAME: "whopper"
-    sources:
-      - "{{.LOCAL_KUBECONFIG_PATH}}"
 
   operator-logs:
     cmds:
-      - task: k-op -- logs -l name={{.OPERATOR_POD_NAME}} -f
-
-  pulumi-up:
-    cmds:
-      - pulumi up -s {{.ENV}} -y
-
-  # CLEANUP
-  cleanup:
-    desc: delete created it-resources
-    cmds:
-      - task: pulumi-destroy
-      - task: delete-operator-cluster
-
-  delete-operator-cluster:
-    cmds:
-      - echo "Delete {{.ENV}} GKE cluster {{.OPERATOR_CLUSTER_NAME}}-{{.ENV}}"
-      - gcloud container clusters delete {{.OPERATOR_CLUSTER_NAME}}-{{.ENV}} --region {{.OPERATOR_CLUSTER_REGION}} --project {{.GCP_PROJECT}}
-      - rm "{{.LOCAL_KUBECONFIG_PATH}}"
-      - rm "{{.OPERATOR_CLUSTER_CREATED_PATH}}"
+      - task: kubectl-o -- logs -l name={{.OPERATOR_POD_NAME}} -f
     sources:
-      - "{{.LOCAL_KUBECONFIG_PATH}}"
-
-  pulumi-destroy:
-    cmds:
-      - pulumi destroy -s {{.ENV}} -y
-      - pulumi stack -s {{.ENV}} rm -y
+      - "{{.LOCAL_OPERATOR_KUBECONFIG_PATH}}"

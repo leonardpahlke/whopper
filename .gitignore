@@ -17,3 +17,6 @@ coverage.out
 
 # Local kubeconfig should not be added to VCS
 .kube/config
+
+
+docs/*

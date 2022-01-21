@@ -1,0 +1,22 @@
+version: "3"
+
+tasks:
+  cleanup:
+    desc: delete created it-resources
+    cmds:
+      - task: pulumi-destroy
+      - task: delete-operator-cluster
+
+  operator:
+    desc: "Destroy the operator infrastructure"
+    cmds:
+      - pulumi destroy -C {{.GLOBAL_OPERATOR_INFRA_PATH}} -s {{.GLOBAL_ENV}} -y
+      - pulumi stack rm -C {{.GLOBAL_OPERATOR_INFRA_PATH}} -s {{.GLOBAL_ENV}} -y
+
+  whopper:
+    desc: "Destroy the whopper infrastructure"
+    cmds:
+      - pulumi destroy -C {{.GLOBAL_WHOPPER_INFRA_PATH}} -s {{.GLOBAL_ENV}} -y
+      - pulumi stack rm -C {{.GLOBAL_WHOPPER_INFRA_PATH}} -s {{.GLOBAL_ENV}} -y
+    sources:
+      - "{{.GLOBAL_WHOPPER_INFRA_PATH}}/**/*.ts"

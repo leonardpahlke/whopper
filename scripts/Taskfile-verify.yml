@@ -1,0 +1,140 @@
+version: "3"
+
+vars:
+  GOPATH:
+    sh: echo $GOPATH
+
+tasks:
+  # VERIFY - check code quality and detect errors and warnings
+  none:
+    desc: Verify project code
+    cmds:
+      - echo: "local-tools-exist"
+      - task: local-dependencies
+      - task: go
+      - task: ts
+
+  # INSTALL - get dependencies and start with project
+  local-tools-exist:
+    desc: Run this task to check if required tools have been installed
+    cmds:
+      - sh ./scripts/verify/check-installations.sh
+
+  local-dependencies:
+    desc: Install dependencies and setup project. This also updates dependencies
+    cmds:
+      - echo "Install libraries with npm used to build IaC with pulumi for the whopper infrastructure"
+      - task: install-whopper-ts
+      - echo "Install libraries with npm used to build IaC with pulumi for the operator infrastructure"
+      - task: install-operator-ts
+      - echo "Install and update golang dependencies"
+      - task: update-deps-go
+      - echo "Pull googleapi repositorty as it is getting used to build the whopper API"
+      - task: pull-googleapi-repo
+      - echo "Compile gRPC Api code"
+      - task: compile-grpc
+
+  install-whopper-ts:
+    dir: "{{.GLOBAL_WHOPPER_INFRA_PATH}}"
+    cmds:
+      - npm install
+    sources:
+      - ./*.ts
+    generates:
+      - package-lock.json
+      - package.json
+
+  install-operator-ts:
+    dir: "{{.GLOBAL_OPERATOR_INFRA_PATH}}"
+    cmds:
+      - npm install
+    sources:
+      - ./*.ts
+    generates:
+      - package-lock.json
+      - package.json
+
+  pull-googleapi-repo:
+    cmds:
+      - cmd: git clone https://github.com/googleapis/googleapis {{.GOPATH}}/googleapis
+        ignore_error: true
+    generates:
+      - "{{.GOPATH}}/googleapis"
+
+  compile-grpc:
+    cmds:
+      - protoc -I=. -I=$(GOPATH)/googleapis/ --go_out=pkg/ --go_opt=paths=source_relative --go-grpc_out=pkg/ --go-grpc_opt=paths=source_relative api/whopper.proto
+    sources:
+      - ./api/whopper.proto
+    generates:
+      - ./pkg/api/*.go
+
+  # Golang Verify
+  go:
+    desc: Verify golang code
+    cmds:
+      - task: verify-build
+      - task: verify-go-mod
+      - task: verify-golangci-lint
+      - task: test-go-unit
+
+  verify-build:
+    cmds:
+      - ./scripts/verify/verify-build.sh
+    sources:
+      - ./*.go
+
+  verify-go-mod:
+    cmds:
+      - go mod tidy
+      - go mod verify
+    sources:
+      - ./*.go
+
+  verify-golangci-lint:
+    cmds:
+      - ./scripts/verify/verify-golangci-lint.sh
+    sources:
+      - ./*.go
+
+  update-deps-go:
+    cmds:
+      - go get -u -t ./...
+      - task: verify-go-mod
+    sources:
+      - ./*.go
+    generates:
+      - go.mod
+      - go.sum
+
+  test-go-unit:
+    cmds:
+      - ./scripts/verify/verify-test-go.sh
+    sources:
+      - ./*.go
+    generates:
+      - ./coverage.html
+      - ./coverage.out
+
+  # Typescript Verify
+  ts:
+    desc: Verify typescript code
+    cmds:
+      - task: verify-whopper-eslint
+      - task: verify-operator-eslint
+
+  verify-whopper-eslint:
+    dir: "{{.GLOBAL_WHOPPER_INFRA_PATH}}"
+    cmds:
+      - npm run format
+      - npm run lint -- --fix
+    sources:
+      - ./*.ts
+
+  verify-operator-eslint:
+    dir: "{{.GLOBAL_OPERATOR_INFRA_PATH}}"
+    cmds:
+      - npm run format
+      - npm run lint -- --fix
+    sources:
+      - ./*.ts
