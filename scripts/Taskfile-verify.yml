@@ -6,7 +6,7 @@ vars:
 
 tasks:
   # VERIFY - check code quality and detect errors and warnings
-  none:
+  code:
     desc: Verify project code
     cmds:
       - echo: "local-tools-exist"
@@ -16,12 +16,12 @@ tasks:
 
   # INSTALL - get dependencies and start with project
   local-tools-exist:
-    desc: Run this task to check if required tools have been installed
+    desc: Check for required tools
     cmds:
       - sh ./scripts/verify/check-installations.sh
 
   local-dependencies:
-    desc: Install dependencies and setup project. This also updates dependencies
+    desc: Install and update project dependencies
     cmds:
       - echo "Install libraries with npm used to build IaC with pulumi for the whopper infrastructure"
       - task: install-whopper-ts
@@ -35,7 +35,7 @@ tasks:
       - task: compile-grpc
 
   install-whopper-ts:
-    dir: "{{.GLOBAL_WHOPPER_INFRA_PATH}}"
+    dir: "{{.WHOPPER_INFRA_PATH}}"
     cmds:
       - npm install
     sources:
@@ -45,7 +45,7 @@ tasks:
       - package.json
 
   install-operator-ts:
-    dir: "{{.GLOBAL_OPERATOR_INFRA_PATH}}"
+    dir: "{{.OPERATOR_INFRA_PATH}}"
     cmds:
       - npm install
     sources:
@@ -71,7 +71,7 @@ tasks:
 
   # Golang Verify
   go:
-    desc: Verify golang code
+    desc: Verify project golang code
     cmds:
       - task: verify-build
       - task: verify-go-mod
@@ -118,13 +118,13 @@ tasks:
 
   # Typescript Verify
   ts:
-    desc: Verify typescript code
+    desc: Verify project typescript code
     cmds:
       - task: verify-whopper-eslint
       - task: verify-operator-eslint
 
   verify-whopper-eslint:
-    dir: "{{.GLOBAL_WHOPPER_INFRA_PATH}}"
+    dir: "{{.WHOPPER_INFRA_PATH}}"
     cmds:
       - npm run format
       - npm run lint -- --fix
@@ -132,7 +132,7 @@ tasks:
       - ./*.ts
 
   verify-operator-eslint:
-    dir: "{{.GLOBAL_OPERATOR_INFRA_PATH}}"
+    dir: "{{.OPERATOR_INFRA_PATH}}"
     cmds:
       - npm run format
       - npm run lint -- --fix

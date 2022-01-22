@@ -4,60 +4,52 @@ includes:
   verify: ./scripts/Taskfile-verify.yml
   deploy: ./scripts/Taskfile-deploy.yml
   destroy: ./scripts/Taskfile-destroy.yml
+  test: ./scripts/Taskfile-k8s-test.yml
+  scan: ./scripts/Taskfile-k8s-scan.yml
 
 vars:
-  PROJECT_NAME: "whopper"
+  MAIN_BRANCH_NAME: "main"
   OPERATOR_CLUSTER_NAME: "operator-cluster"
   WHOPPER_CLUSTER_NAME: "whopper-cluster"
-  OPERATOR_POD_NAME: "pulumi-kubernetes-operator"
-  OPERATOR_CLUSTER_MACHINE_TYPE: "n1-standard-1"
-  OPERATOR_CLUSTER_REGION: "europe-west3"
-  CLUSTER_ZONE: "europe-west3-b"
-  OPERATOR_CLUSTER_NODE_COUNT: 1
+  POD_NAME:
+      sh: echo 'whopper-k8s-operator-'$(git rev-parse --abbrev-ref HEAD)
+  MAIN_GCP_ZONE: "europe-west3-b"
   GCP_PROJECT: "liquid-leonard-pahlke-302"
-  GLOBAL_ENV:
+  ENV:
     sh: echo $(git rev-parse --abbrev-ref HEAD)
   LOCAL_WHOPPER_KUBECONFIG_PATH:
-    sh: echo $(pwd)'/.kube/whopper-config'
+    sh: echo $(pwd)'/.kube/whoppper-kconfig-'$(git rev-parse --abbrev-ref HEAD)
   LOCAL_OPERATOR_KUBECONFIG_PATH:
-    sh: echo $(pwd)'/.kube/operator-config'
-  GLOBAL_OPERATOR_INFRA_PATH:
+    sh: echo $(pwd)'/.kube/operator-kconfig-'$(git rev-parse --abbrev-ref HEAD)
+  OPERATOR_INFRA_PATH:
     sh: echo $(pwd)'/operator-infra'
-  GLOBAL_WHOPPER_INFRA_PATH:
+  WHOPPER_INFRA_PATH:
     sh: echo $(pwd)'/whopper-infra'
 
 tasks:
-  kubectl-o:
-    desc: kubectl wrapper to interact with operator cluster
-    cmds:
-      - kubectl {{.CLI_ARGS}} --kubeconfig {{.LOCAL_OPERATOR_KUBECONFIG_PATH}}
-    sources:
-      - "{{.LOCAL_OPERATOR_KUBECONFIG_PATH}}"
-
-  kubectl-w:
-    desc: kubectl wrapper to interact with the whopper cluster
-    cmds:
-      - kubectl {{.CLI_ARGS}} --kubeconfig {{.LOCAL_WHOPPER_KUBECONFIG_PATH}}
-    sources:
-      - "{{.LOCAL_WHOPPER_KUBECONFIG_PATH}}"
-
   init-project:
+    summary: |
+      Initialize project for production from main branch.
+
+      Performing this task first creates a tiny gke cluster that hosts operators for projects like the whopper project.
+      After the operator cluster is set up, the whopper project infrastructure is deployed.
+      The whopper infrastructure on the main branch uses the pulumi kubernetes operator. The operator is deployed on the operator cluster. 
+      The rest of the whopper infrastructure is not deployed on the operator cluster, but on a new Kubernetes cluster.
+    desc: Initialize project for production
     cmds:
-      - echo "Project initialization happens from main, after that features are be implemented and tested on other branches"
-      - git checkout main
-      - echo "Deploy operator cluster"
+      - git checkout {{.MAIN_BRANCH_NAME}}
       - task: deploy:operator
       - echo "Set pulumi config to deploy whopper"
-      - pulumi config set --secret pulumiAccessToken {{.PULUMI_ACCESS_TOKEN}} -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
-      - pulumi config set stackProjectRepo {{.PROJECT_REPO}} -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
-      - pulumi config set stackCommit {{.COMMIT_SHA}} -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
-      - pulumi config set stackName {{.PULUMI_ORG}}/{{.PULUMI_STACK_NAME}}/{{.ENV}} -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
-      - pulumi config set operatorPodName {{.OPERATOR_POD_NAME}}} -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
-      - pulumi config set --secret operatorKubeconfig $(cat {{.LOCAL_KUBECONFIG_PATH}}) -C {{.GLOBAL_OPERATOR_INFRA_PATH}}
-      - echo "pulumi config set, deploy pulumi whopper project to cluster. The whopper on the main branch also deploys the pulumi kubernetes operator to the operator cluster"
+      - pulumi config set --secret pulumiAccessToken {{.PULUMI_ACCESS_TOKEN}} -C {{.WHOPPER_INFRA_PATH}}
+      - pulumi config set stackProjectRepo {{.PROJECT_REPO}} -C {{.WHOPPER_INFRA_PATH}}
+      - pulumi config set stackCommit {{.COMMIT_SHA}} -C {{.WHOPPER_INFRA_PATH}}
+      - pulumi config set stackName {{.PULUMI_ORG}}/{{.PULUMI_STACK_NAME}}/{{.ENV}} -C {{.WHOPPER_INFRA_PATH}}
+      - pulumi config set operatorPodName {{.POD_NAME}}} -C {{.WHOPPER_INFRA_PATH}}
+      - pulumi config set --secret operatorKubeconfig $(cat {{.LOCAL_KUBECONFIG_PATH}}) -C {{.WHOPPER_INFRA_PATH}}
+      - echo "Pulumi config set, deploy pulumi whopper project to cluster. The whopper on the main branch also deploys the pulumi kubernetes operator to the operator cluster"
       - task: deploy:whopper
-      - echo "check if operator pods is running in the operator cluster"
-      - task: kubectl-o -- get pods -o wide -l name={{.OPERATOR_POD_NAME}}
+      - echo "Check if operator pods is running in the operator cluster"
+      - task: kubectl-o -- get pods -o wide -l name={{.POD_NAME}}
     vars:
       PULUMI_ORG: leonardpahlke
       PULUMI_ACCESS_TOKEN:
@@ -67,8 +59,40 @@ tasks:
       PROJECT_REPO: "https://github.com/leonardpahlke/whopper"
       PULUMI_STACK_NAME: "whopper"
 
+  verify-project:
+    summary: |
+      Run all checks to verify project quality
+
+      This runs code checks, unit tests, integration tests and smoke tests.
+      This tasks requires to have a cluster running
+    desc: Run all checks to verify project quality
+    cmds:
+      - echo "not yet implemented"
+
   operator-logs:
     cmds:
-      - task: kubectl-o -- logs -l name={{.OPERATOR_POD_NAME}} -f
+      - task: kubectl-o -- logs -l name={{.POD_NAME}} -f
     sources:
       - "{{.LOCAL_OPERATOR_KUBECONFIG_PATH}}"
+
+  kubectl-o:
+    summary: |
+      This task can be used to interact with the operator kubernetes cluster.
+
+      The task wrapps the kubectl and referes to the local kubeconfig which gets fetched from the k8s cluster and stored to ./.kube/.
+    desc: kubectl wrapper to interact with operator cluster
+    cmds:
+      - kubectl {{.CLI_ARGS}} --kubeconfig {{.LOCAL_OPERATOR_KUBECONFIG_PATH}}
+    sources:
+      - "{{.LOCAL_OPERATOR_KUBECONFIG_PATH}}"
+
+  kubectl-w:
+    summary: |
+      This task can be used to interact with the whopper kubernetes cluster.
+
+      The task wrapps the kubectl and referes to the local kubeconfig which gets fetched from the k8s cluster and stored to ./.kube/.
+    desc: kubectl wrapper to interact with the whopper cluster
+    cmds:
+      - kubectl {{.CLI_ARGS}} --kubeconfig {{.LOCAL_WHOPPER_KUBECONFIG_PATH}}
+    sources:
+      - "{{.LOCAL_WHOPPER_KUBECONFIG_PATH}}"

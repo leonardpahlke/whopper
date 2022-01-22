@@ -1,0 +1,9 @@
+version: "3"
+
+tasks:
+  whopper-cluster:
+    summary: |
+      Scan the created kubernetes cluster for vulnerabilities.
+    desc: Kubernetes cluster scan
+    cmds:
+      - echo "Not yet implemented!"

@@ -1,0 +1,9 @@
+version: "3"
+
+tasks:
+  whopper-cluster:
+    summary: |
+      Run integration and smoke tests to verify whopper funcionallity.
+    desc: Whopper kubernets tests
+    cmds:
+      - echo "Not yet implemented!"

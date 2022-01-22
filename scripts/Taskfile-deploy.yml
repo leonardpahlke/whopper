@@ -2,37 +2,59 @@ version: "3"
 
 tasks:
   whopper:
-    desc: "Deploy the whopper infrastructure"
+    summary: |
+      Deploy the whopper infrastructure with pulumi.
+
+      The infrastructure gets deployed to a pulumi stack with the name of the current branch.
+      This gets used to initialize the project and to test changes. 
+      1. The project initialization only occurs once for the main branch. Further updates are getting automatically deployed by the pulumi kuberentes operator.
+      2. Temporary feature testing can occure in two ways. 
+        2.1. You can test the infrastructure manually by running this task from a feature branch (make sure to delete the infrastructure of testing is done)
+        2.2. Automatically testing as part of the gitops strategy (triggers on pull_request).
+    desc: Deploy whopper infrastructure with pulumi
+    dir: "{{.WHOPPER_INFRA_PATH}}"
     cmds:
-      - pulumi up -C {{.GLOBAL_OPERATOR_INFRA_PATH}} -s {{.GLOBAL_ENV}} -y
+      - pulumi up -C {{.OPERATOR_INFRA_PATH}} -s {{.ENV}} -y
       - task: pull-whopper-config
     sources:
-      - "{{.GLOBAL_OPERATOR_INFRA_PATH}}/**/*.ts"
+      - "{{.OPERATOR_INFRA_PATH}}/**/*.ts"
 
   operator:
-    desc: "Deploy the operator infrastructure"
+    summary: |
+      Deploy the whopper operator with pulumi.
+
+      The infrastructure gets deployed to a pulumi stack with the name of the current branch.
+      This should only get deployed once at project initialization as it isnt used for manual testing. 
+    dir: "{{.OPERATOR_INFRA_PATH}}"
     cmds:
-      - pulumi up -C {{.GLOBAL_OPERATOR_INFRA_PATH}} -s {{.GLOBAL_ENV}} -y
+      - pulumi up -C {{.OPERATOR_INFRA_PATH}} -s {{.ENV}} -y
       - task: pull-operator-config
     sources:
-      - "{{.GLOBAL_OPERATOR_INFRA_PATH}}/**/*.ts"
+      - "{{.OPERATOR_INFRA_PATH}}/**/*.ts"
 
   pull-operator-config:
     cmds:
-      - KUBECONFIG={{.LOCAL_OPERATOR_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.OPERATOR_CLUSTER_NAME}}-{{.GLOBAL_ENV}} --zone={{.CLUSTER_ZONE}} --project {{.GCP_PROJECT}}
+      - KUBECONFIG={{.LOCAL_OPERATOR_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.OPERATOR_CLUSTER_NAME}}-{{.ENV}} --zone={{.MAIN_GCP_ZONE}} --project {{.GCP_PROJECT}}
     generates:
       - "{{.LOCAL_OPERATOR_KUBECONFIG_PATH}}"
     vars:
       CLUSTER_NAME:
         sh: pulumi stack output "clusterName"
-      CLUSTER_ZONE:
+      MAIN_GCP_ZONE:
         sh: pulumi stack output "clusterZone"
 
   pull-whopper-config:
+    summary: |
+      Pull the kubeconfig of the created whopper cluster to interact with the kubernetes cluster.
+
+      This task gets automatically run whenever the whopper infrastructure gets deployed.
+      The kubeconfig gets stored to {{.LOCAL_WHOPPER_KUBECONFIG_PATH}}.
+      The task 'kubectl-w' wrapps your kubectl and referes to the local whopper automatically by specifying the flag '--kubeconfig'.
+    desc: Pull kubeconfig to access whopper cluster
     cmds:
-      - KUBECONFIG={{.LOCAL_OPERATOR_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.WHOPPER_CLUSTER_NAME}}-{{.GLOBAL_ENV}} --region={{.CLUSTER_REGION}} --project {{.GCP_PROJECT}}
+      - KUBECONFIG={{.LOCAL_WHOPPER_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.WHOPPER_CLUSTER_NAME}}-{{.ENV}} --region={{.CLUSTER_REGION}} --project {{.GCP_PROJECT}}
     generates:
-      - "{{.LOCAL_OPERATOR_KUBECONFIG_PATH}}"
+      - "{{.LOCAL_WHOPPER_KUBECONFIG_PATH}}"
     vars:
       CLUSTER_NAME:
         sh: pulumi stack output "clusterName"
