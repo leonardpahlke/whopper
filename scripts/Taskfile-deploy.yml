@@ -26,6 +26,7 @@ tasks:
       The infrastructure gets deployed to a pulumi stack with the name of the current branch.
       This should only get deployed once at project initialization as it isnt used for manual testing. 
     dir: "{{.OPERATOR_INFRA_PATH}}"
+    silent: true
     cmds:
       - pulumi up -C {{.OPERATOR_INFRA_PATH}} -s {{.ENV}} -y
       - task: pull-operator-config
@@ -37,6 +38,7 @@ tasks:
       - KUBECONFIG={{.LOCAL_OPERATOR_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.OPERATOR_CLUSTER_NAME}}-{{.ENV}} --zone={{.MAIN_GCP_ZONE}} --project {{.GCP_PROJECT}}
     generates:
       - "{{.LOCAL_OPERATOR_KUBECONFIG_PATH}}"
+    silent: true
     vars:
       CLUSTER_NAME:
         sh: pulumi stack output "clusterName"

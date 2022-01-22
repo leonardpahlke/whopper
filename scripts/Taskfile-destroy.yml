@@ -16,6 +16,7 @@ tasks:
 
   operator:
     dir: "{{.OPERATOR_INFRA_PATH}}"
+    silent: true
     cmds:
       - pulumi destroy -C {{.OPERATOR_INFRA_PATH}} -s {{.ENV}} -y
       - pulumi stack rm -C {{.OPERATOR_INFRA_PATH}} -s {{.ENV}} -y

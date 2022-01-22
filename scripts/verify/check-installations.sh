@@ -5,24 +5,24 @@ set -o nounset
 set -o pipefail
 
 # This script is used to check if all required tools have been installed
+cmds=(
+    "git --version"
+    "pulumi version"
+    "node -v"
+    "gcloud -v"
+    "go version"
+    "task --version"
+    "protoc --version"
+)
 
-echo "Check git version"
-git --version
+declare -i i=1
 
-echo "Check pulumi version"
-pulumi version
+for CMD in "${cmds[@]}"; do
+    CMD_OUT=$CMD
+    echo -ne "Check installation $i/${#cmds[@]}\r"
+    i+=1
+done
 
-echo "Check kubectl version"
-kubectl version
-
-echo "Check node version"
-node -v
-
-echo "Check gcloud version"
-gcloud -v
-
-echo "Check go version"
-go version
-
-echo "Check task version"
-task --version
+echo
+echo "All checks ok"
+echo "note: make sure to install 'protoc-gen-go' as well"

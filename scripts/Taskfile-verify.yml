@@ -15,10 +15,7 @@ tasks:
       - task: ts
 
   # INSTALL - get dependencies and start with project
-  local-tools-exist:
-    desc: Check for required tools
-    cmds:
-      - sh ./scripts/verify/check-installations.sh
+  local-tools-exist: sh ./scripts/verify/check-installations.sh
 
   local-dependencies:
     desc: Install and update project dependencies
