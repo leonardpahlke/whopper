@@ -30,32 +30,58 @@ After that go a head to the next chapter [Project lifecycle](#project-lifecycle)
 -  `kubectl` is used to interact with created kubernetes clusters: [installation guide]()
 -  `task` is used instead of a makefile to install, verify, build and in general maintain the project: [installation guide]()
 -  `protoc` is used to compile proto3 api file: [installation guide](https://grpc.io/docs/protoc-installation/)
+   -  `protoc-gen-go`: `$ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest` [gPRC quickstart](https://grpc.io/docs/languages/go/quickstart/)
+   -  `protoc-gen-go-grpc`: `$ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1` [gPRC quickstart](https://grpc.io/docs/languages/go/quickstart/)
 
-You can check if installations are met by running `sh ./scripts/check-installations.sh` or `task check-installations`.
+
+You can check if installations are met by running `sh ./scripts/check-installations.sh` or `task verify:check`.
 
 ```
 $ task -l
 task: Available tasks for this project:
-* bootstrap: 	Initialize project and create it resources
-* cleanup: 	delete created it-resources
-* install: 	Install dependencies and setup project
-* k-op: 	kubectl wrapper to interact with operator cluster
-* update: 	update project dependencies
-* verify: 	Run all verify and test tasks
-* verify-go: 	Run golang verify and test tasks
+* deploy:pull-whopper-config: Pull kubeconfig to access whopper cluster
+* deploy:whopper: 		        Deploy whopper infrastructure with pulumi
+* destroy:cleanup-project: 	  Delete all created it resources
+* destroy:whopper: 		        Destroy the whopper infrastructure
+* init-project: 		          Initialize project for production
+* kubectl-o: 			            kubectl wrapper to interact with operator cluster
+* kubectl-w: 			            kubectl wrapper to interact with the whopper cluster
+* scan:whopper-cluster: 	    Kubernetes cluster scan
+* test:whopper-cluster: 	    Whopper kubernets tests
+* verify-project: 		        Run all checks to verify project quality
+* verify:code: 			          Verify project code
+* verify:go: 			            Verify project golang code
+* verify:install: 		        Install and update project dependencies
+* verify:ts: 			            Verify project typescript code
 ```
 
+Additional information can be get by setting the `--summary` flag.
+
+Example:
+
+```
+$ task --summary verify:go
+task: verify:go
+
+Verify project golang code
+
+commands:
+ - Task: verify:check-go-build
+ - Task: verify:check-go-mod
+ - Task: verify:check-golangci-lint
+ - Task: verify:test-go-unit
+```
 ### Used environment variables
 
 A couple of environment variables are **required**.
 
 - Export you pulumi access token as environment variable `export PULUMI_ACCESS_TOKEN=XXXXXXX`.
-- Make sure `GOPATH` is set; check via `echo $GOPATH`
+- Make sure `GOPATH` and `GOBIN` is set; check via `echo $GOPATH`
 
 
 ### Install local dependencies
 
-To install depenencies locally use the task file run `task install`
+To install depenencies locally use the task file run `task verify:install`
 This will do the following this for you:
 - Install go libraries
 - Install npm libraries locally
@@ -79,16 +105,8 @@ A brief summary of each phase is given in the sections:
 Setup infrastructure for the fist time.
 There are two different types of infrastructure deployments. 
 
-1. **Production deployment**: The production deployment is on going and uses the pulumi kubernetes operator. The operator watches the `main` branch for updates. Production infrastructure is build to stay with rolling blue-green updates.
-2. **Feature test deployment**: The feature test deployment is a short term infrastructure test. It is used whenever a commit is pushed to any other branch then main. The infrastructure is deployed, tested and then destroyed. If these phases succeed without any error the feature is considered "bug free" and can be merged to `main`.
-
-There are two tasks available adressing both deployment types:
-
-```bash
-task init-pulumi-project 
-```
-
-TODO: ...
+1. **Production deployment**: The production deployment is on going and uses the pulumi kubernetes operator. The operator watches the `main` branch for updates. Production infrastructure is build to stay with rolling blue-green updates. The task `task init-project` is used to set up the project inititially.
+2. **Feature test deployment**: The feature test deployment is a short term infrastructure test. It is used whenever a commit is pushed to any other branch then main. The infrastructure is deployed, tested and then destroyed. If these phases succeed without any error the feature is considered "bug free" and can be merged to `main`. The task `task deploy:whopper` can be used to deploy the whopper infrastructure to a pulumi stack with the name of the current branch.
 
 ### Operation Phase
 operation
@@ -97,11 +115,12 @@ operation
 TODO: ...
 ```
 
-To access kubernetes cluster 
 
 ### Cleanup
-destroy created it resources
 
-```bash
-TODO: ...
-```
+Tasks available to clean up the infrastructure:
+* `task destroy:cleanup-project` to destroy the `main` project including the whopper infrastructure with the pulumi operator and the operator cluster.  
+* `task destroy:whopper` to the destroy the whopper infrastructure with the stack name of the current branch.
+
+
+> More information can be found in the `/docs` folder.  

@@ -1,7 +1,7 @@
 version: "3"
 
 vars:
-  GOPATH:
+  API_FOLDER:
     sh: echo $GOPATH
 
 tasks:
@@ -9,15 +9,14 @@ tasks:
   code:
     desc: Verify project code
     cmds:
-      - echo: "local-tools-exist"
-      - task: local-dependencies
+      - task: check
       - task: go
       - task: ts
 
   # INSTALL - get dependencies and start with project
-  local-tools-exist: sh ./scripts/verify/check-installations.sh
+  check: sh ./scripts/verify/check-installations.sh
 
-  local-dependencies:
+  install:
     desc: Install and update project dependencies
     cmds:
       - echo "Install libraries with npm used to build IaC with pulumi for the whopper infrastructure"
@@ -27,7 +26,7 @@ tasks:
       - echo "Install and update golang dependencies"
       - task: update-deps-go
       - echo "Pull googleapi repositorty as it is getting used to build the whopper API"
-      - task: pull-googleapi-repo
+      - task: pull-googleapi-language-proto
       - echo "Compile gRPC Api code"
       - task: compile-grpc
 
@@ -51,16 +50,16 @@ tasks:
       - package-lock.json
       - package.json
 
-  pull-googleapi-repo:
+  pull-googleapi-language-proto:
     cmds:
-      - cmd: git clone https://github.com/googleapis/googleapis {{.GOPATH}}/googleapis
+      - cmd: git clone https://github.com/googleapis/googleapis {{.API_FOLDER}}/googleapis
         ignore_error: true
     generates:
-      - "{{.GOPATH}}/googleapis"
+      - "{{.API_FOLDER}}/language_service.proto"
 
   compile-grpc:
     cmds:
-      - protoc -I=. -I=$(GOPATH)/googleapis/ --go_out=pkg/ --go_opt=paths=source_relative --go-grpc_out=pkg/ --go-grpc_opt=paths=source_relative api/whopper.proto
+      - protoc -I=. -I={{.API_FOLDER}}/googleapis/ --go_out=pkg/ --go_opt=paths=source_relative --go-grpc_out=pkg/ --go-grpc_opt=paths=source_relative api/whopper.proto
     sources:
       - ./api/whopper.proto
     generates:
@@ -70,25 +69,26 @@ tasks:
   go:
     desc: Verify project golang code
     cmds:
-      - task: verify-build
-      - task: verify-go-mod
-      - task: verify-golangci-lint
+      - task: check-go-build
+      - task: check-go-mod
+      - task: check-golangci-lint
       - task: test-go-unit
 
-  verify-build:
+  check-go-build:
     cmds:
       - ./scripts/verify/verify-build.sh
     sources:
       - ./*.go
 
-  verify-go-mod:
+  check-go-mod:
     cmds:
       - go mod tidy
       - go mod verify
     sources:
-      - ./*.go
+      - go.mod
+      - go.sum
 
-  verify-golangci-lint:
+  check-golangci-lint:
     cmds:
       - ./scripts/verify/verify-golangci-lint.sh
     sources:
@@ -97,9 +97,7 @@ tasks:
   update-deps-go:
     cmds:
       - go get -u -t ./...
-      - task: verify-go-mod
-    sources:
-      - ./*.go
+      - task: check-go-mod
     generates:
       - go.mod
       - go.sum

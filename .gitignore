@@ -22,3 +22,5 @@ coverage.out
 docs/*
 
 bin/
+
+api/googleapis/*
