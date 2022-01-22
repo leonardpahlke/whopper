@@ -123,7 +123,6 @@ tasks:
   verify-whopper-eslint:
     dir: "{{.WHOPPER_INFRA_PATH}}"
     cmds:
-      - npm run format
       - npm run lint -- --fix
     sources:
       - ./*.ts
@@ -131,7 +130,6 @@ tasks:
   verify-operator-eslint:
     dir: "{{.OPERATOR_INFRA_PATH}}"
     cmds:
-      - npm run format
       - npm run lint -- --fix
     sources:
       - ./*.ts
