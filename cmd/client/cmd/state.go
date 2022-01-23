@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // This command is used to simplify how to interfact with the dapr statestorage
@@ -75,7 +76,7 @@ var getStateCmd = &cobra.Command{
 // get state command
 func runGetStateClient(cfg *clientConfig) error {
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", cfg.grpcHost, cfg.grpcPort), grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", cfg.grpcHost, cfg.grpcPort), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		return errors.Wrap(err, "could not connect using gRPC")
 	}

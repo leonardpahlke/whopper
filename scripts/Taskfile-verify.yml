@@ -74,11 +74,7 @@ tasks:
       - task: check-golangci-lint
       - task: test-go-unit
 
-  check-go-build:
-    cmds:
-      - ./scripts/verify/verify-build.sh
-    sources:
-      - ./*.go
+  check-go-build: ./scripts/verify/verify-build.sh
 
   check-go-mod:
     cmds:
@@ -88,11 +84,7 @@ tasks:
       - go.mod
       - go.sum
 
-  check-golangci-lint:
-    cmds:
-      - ./scripts/verify/verify-golangci-lint.sh
-    sources:
-      - ./*.go
+  check-golangci-lint: ./scripts/verify/verify-golangci-lint.sh
 
   update-deps-go:
     cmds:
@@ -102,14 +94,7 @@ tasks:
       - go.mod
       - go.sum
 
-  test-go-unit:
-    cmds:
-      - ./scripts/verify/verify-test-go.sh
-    sources:
-      - ./*.go
-    generates:
-      - ./coverage.html
-      - ./coverage.out
+  test-go-unit: ./scripts/verify/verify-test-go.sh
 
   # Typescript Verify
   ts:
