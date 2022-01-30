@@ -23,12 +23,12 @@ After that go a head to the next chapter [Project lifecycle](#project-lifecycle)
 
 ### Required installations
 
--  `go` for application logic is used: [installation guide]()
--  `pulumi` as infrastructure as code (IaC) tool is used: [installation guide]()
--  `node` and `npm` is used to describe Pulumi IaC: [installation guide]()
--  `gcloud` CLI is used to access resources created in gcp: [installation guide]()
--  `kubectl` is used to interact with created kubernetes clusters: [installation guide]()
--  `task` is used instead of a makefile to install, verify, build and in general maintain the project: [installation guide]()
+-  `go` for application logic is used: [installation guide](https://go.dev/doc/install)
+-  `pulumi` as infrastructure as code (IaC) tool is used: [installation guide](https://www.pulumi.com/docs/get-started/install/)
+-  `node` and `npm` is used to describe Pulumi IaC: [installation guide](https://nodejs.org/en/download/)
+-  `gcloud` CLI is used to access resources created in gcp: [installation guide](https://cloud.google.com/sdk/docs/install), Make sure to run `gcloud init` & `gcloud auth application-default login`
+-  `kubectl` is used to interact with created kubernetes clusters: [installation guide](https://kubernetes.io/docs/tasks/tools/)
+-  `task` is used instead of a makefile to install, verify, build and in general maintain the project: [installation guide](https://taskfile.dev/#/installation)
 -  `protoc` is used to compile proto3 api file: [installation guide](https://grpc.io/docs/protoc-installation/)
    -  `protoc-gen-go`: `$ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest` [gPRC quickstart](https://grpc.io/docs/languages/go/quickstart/)
    -  `protoc-gen-go-grpc`: `$ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1` [gPRC quickstart](https://grpc.io/docs/languages/go/quickstart/)
@@ -75,11 +75,13 @@ commands:
 
 A couple of environment variables are **required**.
 
-- Export you pulumi access token as environment variable `export PULUMI_ACCESS_TOKEN=XXXXXXX`.
-- Make sure `GOPATH` and `GOBIN` is set; check via `echo $GOPATH`
-
+- Export you pulumi access token as environment variable `PULUMI_ACCESS_TOKEN`.
+- Make sure `GOPATH` is set. It usually points to `/home/<user>/go`
+- Set `DEFAULT_GOOGLE_PROJECT` to your GCP profile id
 
 ### Install local dependencies
+
+**!! Does not work on Windows !!** I suggest using Linux or Macos. You can spin up virtual linux machine using [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or any other virtualization tool.
 
 To install depenencies locally use the task file run `task verify:install`
 This will do the following this for you:

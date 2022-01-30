@@ -26,8 +26,9 @@ export type IGcpInput = {};
  * GCP infrastructure output
  */
 export type IGcpOutput = {
-  clusterName: pulumi.Output<string>;
-  kubeconfig: pulumi.Output<string>;
+    clusterName: pulumi.Output<string>;
+    clusterRegion: pulumi.Output<string>;
+    kubeconfig: pulumi.Output<string>;
 };
 
 /**
@@ -36,42 +37,46 @@ export type IGcpOutput = {
  *  - GKE
  */
 export class GcpInfra extends Infra {
-  private in: IGcpInput;
+    private in: IGcpInput;
 
-  constructor(config: InfraConfig, input: IGcpInput) {
-    super(config);
-    this.in = input;
-  }
+    constructor(config: InfraConfig, input: IGcpInput) {
+        super(config);
+        this.in = input;
+    }
 
-  create(): IGcpOutput {
-    const engineVersion = gcp.container
-      .getEngineVersions()
-      .then((v) => v.latestMasterVersion);
-    // Create a GKE cluster
-    const cluster = new gcp.container.Cluster(this.GetName("cluster"), {
-      initialNodeCount: this.config.vars.initialNodeCount,
-      minMasterVersion: engineVersion,
-      nodeVersion: engineVersion,
-      nodeConfig: {
-        machineType: this.config.vars.machineType,
-        oauthScopes: [
-          "https://www.googleapis.com/auth/compute",
-          "https://www.googleapis.com/auth/devstorage.read_only",
-          "https://www.googleapis.com/auth/logging.write",
-          "https://www.googleapis.com/auth/monitoring",
-        ],
-      },
-    });
+    create(): IGcpOutput {
+        const engineVersion = gcp.container
+            .getEngineVersions({
+                project: this.config.gcpProjectName,
+                location: this.config.vars.region,
+            })
+            .then((v) => v.latestMasterVersion);
+        // Create a GKE cluster
+        const cluster = new gcp.container.Cluster(this.GetName("cluster"), {
+            initialNodeCount: this.config.vars.initialNodeCount,
+            minMasterVersion: engineVersion,
+            nodeVersion: engineVersion,
+            location: this.config.vars.region,
+            nodeConfig: {
+                machineType: this.config.vars.machineType,
+                oauthScopes: [
+                    "https://www.googleapis.com/auth/compute",
+                    "https://www.googleapis.com/auth/devstorage.read_only",
+                    "https://www.googleapis.com/auth/logging.write",
+                    "https://www.googleapis.com/auth/monitoring",
+                ],
+            },
+        });
 
-    // Export the Cluster name
-    // const clusterName: pulumi.Output<string> = cluster.name;
+        // Export the Cluster name
+        // const clusterName: pulumi.Output<string> = cluster.name;
 
-    // Kubeconfig
-    const kubeconfig = pulumi
-      .all([cluster.name, cluster.endpoint, cluster.masterAuth])
-      .apply(([name, endpoint, masterAuth]) => {
-        const context = `${gcp.config.project}_${gcp.config.zone}_${name}`;
-        return `apiVersion: v1
+        // Kubeconfig
+        const kubeconfig = pulumi
+            .all([cluster.name, cluster.endpoint, cluster.masterAuth])
+            .apply(([name, endpoint, masterAuth]) => {
+                const context = `${gcp.config.project}_${gcp.config.zone}_${name}`;
+                return `apiVersion: v1
 clusters:
 - cluster:
     certificate-authority-data: ${masterAuth.clusterCaCertificate}
@@ -96,12 +101,15 @@ users:
         token-key: '{.credential.access_token}'
       name: gcp
 `;
-      });
+            });
 
-    // set gcp-infra output
-    return {
-      clusterName: cluster.name,
-      kubeconfig,
-    };
-  }
+        // Export some variables which can be used to connect to the cluster
+
+        // set gcp-infra output
+        return {
+            clusterName: cluster.name,
+            clusterRegion: cluster.location,
+            kubeconfig,
+        };
+    }
 }

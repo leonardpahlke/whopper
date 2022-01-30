@@ -18,9 +18,11 @@ coverage.out
 # Local kubeconfig should not be added to VCS
 .kube/config
 
-
 docs/*
 
 bin/
 
-api/googleapis/*
+# TODO: check if this should get ignored
+# Pulumi.*.yaml
+
+.kube/*

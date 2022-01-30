@@ -11,8 +11,8 @@ tasks:
     desc: Delete all created it resources
     cmds:
       - git checkout {{.MAIN_BRANCH_NAME}}
-      - task: pulumi-destroy
-      - task: delete-operator-cluster
+      - task: whopper
+      - task: operator
 
   operator:
     dir: "{{.OPERATOR_INFRA_PATH}}"
@@ -20,6 +20,8 @@ tasks:
     cmds:
       - pulumi destroy -C {{.OPERATOR_INFRA_PATH}} -s {{.ENV}} -y
       - pulumi stack rm -C {{.OPERATOR_INFRA_PATH}} -s {{.ENV}} -y
+      - cmd: rm {{.LOCAL_OPERATOR_KUBECONFIG_PATH}}
+        ignore_error: true
 
   whopper:
     summary: |
@@ -31,5 +33,8 @@ tasks:
     cmds:
       - pulumi destroy -C {{.WHOPPER_INFRA_PATH}} -s {{.ENV}} -y
       - pulumi stack rm -C {{.WHOPPER_INFRA_PATH}} -s {{.ENV}} -y
+      - cmd: rm {{.LOCAL_WHOPPER_KUBECONFIG_PATH}}
+        ignore_error: true
+
     sources:
       - "{{.WHOPPER_INFRA_PATH}}/**/*.ts"

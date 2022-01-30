@@ -14,10 +14,14 @@ tasks:
       - task: ts
 
   # INSTALL - get dependencies and start with project
-  check: sh ./scripts/verify/check-installations.sh
+  check:
+    run: once
+    cmds:
+      - sh ./scripts/verify/check-installations.sh
 
   install:
     desc: Install and update project dependencies
+    run: once
     cmds:
       - echo "Install libraries with npm used to build IaC with pulumi for the whopper infrastructure"
       - task: install-whopper-ts
@@ -33,7 +37,7 @@ tasks:
   install-whopper-ts:
     dir: "{{.WHOPPER_INFRA_PATH}}"
     cmds:
-      - npm install
+      - npm ci
     sources:
       - ./*.ts
     generates:
@@ -43,7 +47,7 @@ tasks:
   install-operator-ts:
     dir: "{{.OPERATOR_INFRA_PATH}}"
     cmds:
-      - npm install
+      - npm ci
     sources:
       - ./*.ts
     generates:
@@ -52,6 +56,7 @@ tasks:
 
   pull-googleapi-language-proto:
     cmds:
+      - echo "The following command might need root priviledges. If so, runs with 'sudo'".
       - cmd: git clone https://github.com/googleapis/googleapis {{.API_FOLDER}}/googleapis
         ignore_error: true
     generates:
@@ -74,7 +79,11 @@ tasks:
       - task: check-golangci-lint
       - task: test-go-unit
 
-  check-go-build: ./scripts/verify/verify-build.sh
+  check-go-build: 
+    cmds:
+      - ./scripts/verify/verify-build.sh
+    sources:
+      - ./*.go
 
   check-go-mod:
     cmds:
@@ -84,12 +93,18 @@ tasks:
       - go.mod
       - go.sum
 
-  check-golangci-lint: ./scripts/verify/verify-golangci-lint.sh
+  check-golangci-lint:
+    cmds:
+      - ./scripts/verify/verify-golangci-lint.sh
+    sources:
+      - ./*.go
 
   update-deps-go:
     cmds:
       - go get -u -t ./...
       - task: check-go-mod
+    sources:
+      - ./*.go
     generates:
       - go.mod
       - go.sum

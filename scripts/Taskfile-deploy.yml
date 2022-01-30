@@ -14,10 +14,23 @@ tasks:
     desc: Deploy whopper infrastructure with pulumi
     dir: "{{.WHOPPER_INFRA_PATH}}"
     cmds:
-      - pulumi up -C {{.OPERATOR_INFRA_PATH}} -s {{.ENV}} -y
+      - echo "Set pulumi config"
+      - pulumi config set gcp:project {{.GCP_PROJECT}}
+      - pulumi config set gcp:region {{.MAIN_GCP_REGION}}
+      - pulumi config set --path 'vars.zone' {{.MAIN_GCP_ZONE}} 
+      - pulumi config set --path 'vars.region' {{.MAIN_GCP_REGION}} 
+      - pulumi config set --path 'vars.initialNodeCount' {{.ZONE_NODE_COUNT}} 
+      - pulumi config set --path 'vars.machineType' {{.MACHINE_TYPE}} 
+      - pulumi config set project {{.GCP_PROJECT}} 
+      - pulumi config set env {{.ENV}}
+      - echo "Deploy infrastructure"
+      - pulumi up -s {{.ENV}} -y
       - task: pull-whopper-config
     sources:
-      - "{{.OPERATOR_INFRA_PATH}}/**/*.ts"
+      - "{{.WHOPPER_INFRA_PATH}}/**/*.ts"
+    vars:
+      ZONE_NODE_COUNT: 1 # (ZONE_NODE_COUNT * COUNT_ZONES_IN_REGION) = NUMBER_OF_NODES
+      MACHINE_TYPE: "n1-standard-1"
 
   operator:
     summary: |
@@ -28,24 +41,39 @@ tasks:
     dir: "{{.OPERATOR_INFRA_PATH}}"
     silent: true
     cmds:
-      - pulumi up -C {{.OPERATOR_INFRA_PATH}} -s {{.ENV}} -y
+      - echo "Set pulumi config"
+      - pulumi config set gcp:project {{.GCP_PROJECT}}
+      - pulumi config set gcp:zone {{.MAIN_GCP_ZONE}}
+      - pulumi config set project {{.GCP_PROJECT}}
+      - pulumi config set zone {{.MAIN_GCP_ZONE}}
+      - pulumi config set initialNodeCount {{.ZONE_NODE_COUNT}}
+      - pulumi config set machineType {{.MACHINE_TYPE}}
+      - pulumi config set clusterName {{.CLUSTER_NAME}}
+      - echo "Deploy infrastructure"
+      - pulumi up -s {{.ENV}} -y
       - task: pull-operator-config
     sources:
       - "{{.OPERATOR_INFRA_PATH}}/**/*.ts"
+    vars:
+      MACHINE_TYPE: "n1-standard-1"
+      CLUSTER_NAME: "operator-cluster"
+      ZONE_NODE_COUNT: 1
 
   pull-operator-config:
+    dir: "{{.OPERATOR_INFRA_PATH}}"
     cmds:
-      - KUBECONFIG={{.LOCAL_OPERATOR_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.OPERATOR_CLUSTER_NAME}}-{{.ENV}} --zone={{.MAIN_GCP_ZONE}} --project {{.GCP_PROJECT}}
+      - KUBECONFIG={{.LOCAL_OPERATOR_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.CLUSTER_NAME}} --zone={{.CLUSTER_ZONE}} --project {{.GCP_PROJECT}}
     generates:
       - "{{.LOCAL_OPERATOR_KUBECONFIG_PATH}}"
     silent: true
     vars:
       CLUSTER_NAME:
         sh: pulumi stack output "clusterName"
-      MAIN_GCP_ZONE:
+      CLUSTER_ZONE:
         sh: pulumi stack output "clusterZone"
 
   pull-whopper-config:
+    dir: "{{.WHOPPER_INFRA_PATH}}"
     summary: |
       Pull the kubeconfig of the created whopper cluster to interact with the kubernetes cluster.
 
@@ -54,7 +82,7 @@ tasks:
       The task 'kubectl-w' wrapps your kubectl and referes to the local whopper automatically by specifying the flag '--kubeconfig'.
     desc: Pull kubeconfig to access whopper cluster
     cmds:
-      - KUBECONFIG={{.LOCAL_WHOPPER_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.WHOPPER_CLUSTER_NAME}}-{{.ENV}} --region={{.CLUSTER_REGION}} --project {{.GCP_PROJECT}}
+      - KUBECONFIG={{.LOCAL_WHOPPER_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.CLUSTER_NAME}} --region={{.CLUSTER_REGION}} --project {{.GCP_PROJECT}}
     generates:
       - "{{.LOCAL_WHOPPER_KUBECONFIG_PATH}}"
     vars:

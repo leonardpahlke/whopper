@@ -20,18 +20,21 @@ const pulumiConfig = new pulumi.Config();
 // get pulumi config variables
 const initialNodeCount = pulumiConfig.getNumber("initialNodeCount") ?? 1;
 const machineType = pulumiConfig.get("machineType") ?? "n1-standard-1";
-const clusterName = pulumiConfig.get("clusterName") ?? "operator-cluster";
+const k8sClusterName = pulumiConfig.get("clusterName") ?? "operator-cluster";
+const gcpProjectName = pulumiConfig.require("project");
+const gcpDefaultZone = pulumiConfig.require("zone");
 
 // get latest gke master version
 const engineVersion = gcp.container
-    .getEngineVersions()
+    .getEngineVersions({ project: gcpProjectName, location: gcpDefaultZone })
     .then((v) => v.latestMasterVersion);
 
-    // Create a GKE cluster
-const cluster = new gcp.container.Cluster(clusterName, {
+// Create a GKE cluster
+const cluster = new gcp.container.Cluster(k8sClusterName, {
     initialNodeCount,
     minMasterVersion: engineVersion,
     nodeVersion: engineVersion,
+    location: gcpDefaultZone,
     nodeConfig: {
         machineType,
         oauthScopes: [
@@ -43,5 +46,10 @@ const cluster = new gcp.container.Cluster(clusterName, {
     },
 });
 
-// Export the name of the created cluster
-export default cluster.name;
+// Export some variables which can be used to connect to the cluster
+
+// eslint-disable-next-line import/prefer-default-export
+export const clusterName: pulumi.Output<string> = cluster.name;
+
+// eslint-disable-next-line import/prefer-default-export
+export const clusterZone: pulumi.Output<string> = cluster.location;

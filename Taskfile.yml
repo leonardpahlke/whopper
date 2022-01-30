@@ -12,9 +12,13 @@ vars:
   OPERATOR_CLUSTER_NAME: "operator-cluster"
   WHOPPER_CLUSTER_NAME: "whopper-cluster"
   POD_NAME:
-      sh: echo 'whopper-k8s-operator-'$(git rev-parse --abbrev-ref HEAD)
-  MAIN_GCP_ZONE: "europe-west3-b"
-  GCP_PROJECT: "liquid-leonard-pahlke-302"
+    sh: echo 'whopper-k8s-operator-'$(git rev-parse --abbrev-ref HEAD)
+  MAIN_GCP_REGION:
+    sh: echo '$DEFAULT_GOOGLE_REGION'
+  MAIN_GCP_ZONE:
+    sh: echo '$DEFAULT_GOOGLE_ZONE'
+  GCP_PROJECT:
+    sh: echo '$DEFAULT_GOOGLE_PROJECT'
   ENV:
     sh: echo $(git rev-parse --abbrev-ref HEAD)
   LOCAL_WHOPPER_KUBECONFIG_PATH:
@@ -38,14 +42,21 @@ tasks:
     desc: Initialize project for production
     cmds:
       - git checkout {{.MAIN_BRANCH_NAME}}
+      # - git pull --rebase
+      - task: verify:install
+      - task: verify:check
+      - task: verify:code
+      - gcloud config set project {{.GCP_PROJECT}}
       - task: deploy:operator
       - echo "Set pulumi config to deploy whopper"
-      - pulumi config set --secret pulumiAccessToken {{.PULUMI_ACCESS_TOKEN}} -C {{.WHOPPER_INFRA_PATH}}
+      - cmd: pulumi config set --secret pulumiAccessToken {{.PULUMI_ACCESS_TOKEN}} -C {{.WHOPPER_INFRA_PATH}}
+        silent: true
       - pulumi config set stackProjectRepo {{.PROJECT_REPO}} -C {{.WHOPPER_INFRA_PATH}}
       - pulumi config set stackCommit {{.COMMIT_SHA}} -C {{.WHOPPER_INFRA_PATH}}
       - pulumi config set stackName {{.PULUMI_ORG}}/{{.PULUMI_STACK_NAME}}/{{.ENV}} -C {{.WHOPPER_INFRA_PATH}}
-      - pulumi config set operatorPodName {{.POD_NAME}}} -C {{.WHOPPER_INFRA_PATH}}
-      - pulumi config set --secret operatorKubeconfig $(cat {{.LOCAL_KUBECONFIG_PATH}}) -C {{.WHOPPER_INFRA_PATH}}
+      - pulumi config set operatorPodName {{.POD_NAME}} -C {{.WHOPPER_INFRA_PATH}}
+      - cmd: pulumi config set --secret operatorKubeconfig "$(cat {{.LOCAL_OPERATOR_KUBECONFIG_PATH}})" -C {{.WHOPPER_INFRA_PATH}}
+        silent: true
       - echo "Pulumi config set, deploy pulumi whopper project to cluster. The whopper on the main branch also deploys the pulumi kubernetes operator to the operator cluster"
       - task: deploy:whopper
       - echo "Check if operator pods is running in the operator cluster"
@@ -53,7 +64,7 @@ tasks:
     vars:
       PULUMI_ORG: leonardpahlke
       PULUMI_ACCESS_TOKEN:
-        sh: $PULUMI_ACCESS_TOKEN
+        sh: echo $PULUMI_ACCESS_TOKEN
       COMMIT_SHA:
         sh: git rev-parse HEAD
       PROJECT_REPO: "https://github.com/leonardpahlke/whopper"
