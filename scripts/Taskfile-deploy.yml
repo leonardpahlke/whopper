@@ -90,3 +90,15 @@ tasks:
         sh: pulumi stack output "clusterName"
       CLUSTER_REGION:
         sh: pulumi stack output "clusterRegion"
+
+  container-image-push:
+    summary: |
+      Push a container image to quay.io
+
+      Tags can be set as variable "V"
+    desc: Push a golang container to quay.io
+    cmds:
+      - ./scripts/push/container-images.sh {{.V}} {{.REPOSITORY}}
+    vars:
+      V: "latest"
+      REPOSITORY: "quay.io/leonardpahlke"

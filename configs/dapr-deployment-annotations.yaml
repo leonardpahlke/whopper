@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: translator
+  namespace: default
+  labels:
+    app: translator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: translator
+  template:
+    metadata:
+      labels:
+        app: translator
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "translator"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/app-port: "50051"
+        dapr.io/config: "serverconfig"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analyzer
+  namespace: default
+  labels:
+    app: analyzer
+spec:
+  replicas: 1
+  containers:
+  - name: analyzer
+    image: ...
+  selector:
+    matchLabels:
+      app: analyzer
+  template:
+    metadata:
+      labels:
+        app: analyzer
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "analyzer"
+        dapr.io/app-protocol: "grpc"
+        dapr.io/app-port: "50052"
+        dapr.io/config: "serverconfig"
+---
