@@ -15,8 +15,8 @@
 package main
 
 import (
-	"climatewhopper/cmd/client/cmd"
-	"climatewhopper/pkg/util"
+	"whopper/cmd/client/cmd"
+	"whopper/pkg/util"
 
 	"go.uber.org/zap"
 )

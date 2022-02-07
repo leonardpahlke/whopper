@@ -3,7 +3,7 @@ version: "3"
 tasks:
   whopper-cluster:
     summary: |
-      Run integration and smoke tests to verify whopper funcionallity.
-    desc: Whopper kubernets tests
+      Run integration and smoke tests to verify whopper functionality.
+    desc: Whopper kubernetes tests
     cmds:
       - echo "Not yet implemented!"

@@ -15,10 +15,10 @@
 package whopperutil
 
 import (
-	"climatewhopper/pkg/util"
 	"context"
 	"fmt"
 	"net"
+	"whopper/pkg/util"
 
 	language "cloud.google.com/go/language/apiv1"
 	"cloud.google.com/go/translate"

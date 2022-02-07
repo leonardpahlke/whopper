@@ -15,11 +15,11 @@
 package main
 
 import (
-	"climatewhopper/pkg/api"
-	"climatewhopper/pkg/whopperutil"
 	"context"
 	"errors"
 	"fmt"
+	"whopper/pkg/api"
+	"whopper/pkg/whopperutil"
 )
 
 // implementedHubServer is used to implement RunHub function.

@@ -15,11 +15,11 @@
 package newsparser
 
 import (
-	"climatewhopper/pkg/api"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"whopper/pkg/api"
 
 	"github.com/foolin/pagser"
 	"github.com/hashicorp/go-multierror"

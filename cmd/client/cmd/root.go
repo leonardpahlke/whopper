@@ -15,9 +15,9 @@
 package cmd
 
 import (
-	"climatewhopper/pkg/util"
-	"climatewhopper/pkg/whopperutil"
 	"fmt"
+	"whopper/pkg/util"
+	"whopper/pkg/whopperutil"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"

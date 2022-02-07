@@ -15,11 +15,11 @@
 package main
 
 import (
-	"climatewhopper/pkg/api"
-	"climatewhopper/pkg/newsparser"
-	"climatewhopper/pkg/whopperutil"
 	"context"
 	"fmt"
+	"whopper/pkg/api"
+	"whopper/pkg/newsparser"
+	"whopper/pkg/whopperutil"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

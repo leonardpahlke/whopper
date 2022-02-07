@@ -15,12 +15,12 @@
 package main
 
 import (
-	"climatewhopper/pkg/api"
-	"climatewhopper/pkg/whopperutil"
 	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"whopper/pkg/api"
+	"whopper/pkg/whopperutil"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"

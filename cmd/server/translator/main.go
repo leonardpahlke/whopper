@@ -15,10 +15,10 @@
 package main
 
 import (
-	"climatewhopper/pkg/api"
-	"climatewhopper/pkg/whopperutil"
 	"context"
 	"fmt"
+	"whopper/pkg/api"
+	"whopper/pkg/whopperutil"
 
 	"github.com/pkg/errors"
 	"golang.org/x/text/language"

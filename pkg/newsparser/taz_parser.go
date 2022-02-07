@@ -15,9 +15,9 @@
 package newsparser
 
 import (
-	"climatewhopper/pkg/api"
 	"fmt"
 	"strings"
+	"whopper/pkg/api"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/foolin/pagser"

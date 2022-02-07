@@ -22,7 +22,7 @@ vars:
   ENV:
     sh: echo $(git rev-parse --abbrev-ref HEAD)
   LOCAL_WHOPPER_KUBECONFIG_PATH:
-    sh: echo $(pwd)'/.kube/whoppper-kconfig-'$(git rev-parse --abbrev-ref HEAD)
+    sh: echo $(pwd)'/.kube/whopper-kconfig-'$(git rev-parse --abbrev-ref HEAD)
   LOCAL_OPERATOR_KUBECONFIG_PATH:
     sh: echo $(pwd)'/.kube/operator-kconfig-'$(git rev-parse --abbrev-ref HEAD)
   OPERATOR_INFRA_PATH:
@@ -91,7 +91,7 @@ tasks:
     summary: |
       This task can be used to interact with the operator kubernetes cluster.
 
-      The task wrapps the kubectl and referes to the local kubeconfig which gets fetched from the k8s cluster and stored to ./.kube/.
+      The task wrap's the kubectl and refers to the local kubeconfig which gets fetched from the k8s cluster and stored to ./.kube/.
     desc: kubectl wrapper to interact with operator cluster
     cmds:
       - kubectl {{.CLI_ARGS}} --kubeconfig {{.LOCAL_OPERATOR_KUBECONFIG_PATH}}
@@ -102,7 +102,7 @@ tasks:
     summary: |
       This task can be used to interact with the whopper kubernetes cluster.
 
-      The task wrapps the kubectl and referes to the local kubeconfig which gets fetched from the k8s cluster and stored to ./.kube/.
+      The task wrap's the kubectl and refers to the local kubeconfig which gets fetched from the k8s cluster and stored to ./.kube/.
     desc: kubectl wrapper to interact with the whopper cluster
     cmds:
       - kubectl {{.CLI_ARGS}} --kubeconfig {{.LOCAL_WHOPPER_KUBECONFIG_PATH}}

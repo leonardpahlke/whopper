@@ -85,7 +85,7 @@ func runGetStateClient(cfg *clientConfig) error {
 	// create dapr client
 	client := dapr.NewClientWithConnection(conn)
 	if err != nil {
-		cfg.logger.Panicw("could not create dapr client", "error", err)
+		cfg.logger.Fatalw("could not create dapr client", "error", err)
 	}
 	defer client.Close()
 

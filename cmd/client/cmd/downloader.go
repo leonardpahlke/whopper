@@ -15,11 +15,11 @@
 package cmd
 
 import (
-	"climatewhopper/pkg/api"
-	"climatewhopper/pkg/whopperutil"
 	"context"
 	"fmt"
 	"time"
+	"whopper/pkg/api"
+	"whopper/pkg/whopperutil"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

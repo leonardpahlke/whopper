@@ -7,10 +7,10 @@ tasks:
 
       The infrastructure gets deployed to a pulumi stack with the name of the current branch.
       This gets used to initialize the project and to test changes. 
-      1. The project initialization only occurs once for the main branch. Further updates are getting automatically deployed by the pulumi kuberentes operator.
-      2. Temporary feature testing can occure in two ways. 
+      1. The project initialization only occurs once for the main branch. Further updates are getting automatically deployed by the pulumi Kubernetes operator.
+      2. Temporary feature testing can occur in two ways. 
         2.1. You can test the infrastructure manually by running this task from a feature branch (make sure to delete the infrastructure of testing is done)
-        2.2. Automatically testing as part of the gitops strategy (triggers on pull_request).
+        2.2. Automatically testing as part of the GitOps strategy (triggers on pull_request).
     desc: Deploy whopper infrastructure with pulumi
     dir: "{{.WHOPPER_INFRA_PATH}}"
     cmds:
@@ -37,7 +37,7 @@ tasks:
       Deploy the whopper operator with pulumi.
 
       The infrastructure gets deployed to a pulumi stack with the name of the current branch.
-      This should only get deployed once at project initialization as it isnt used for manual testing. 
+      This should only get deployed once at project initialization as it isn't used for manual testing. 
     dir: "{{.OPERATOR_INFRA_PATH}}"
     silent: true
     cmds:
@@ -79,7 +79,7 @@ tasks:
 
       This task gets automatically run whenever the whopper infrastructure gets deployed.
       The kubeconfig gets stored to {{.LOCAL_WHOPPER_KUBECONFIG_PATH}}.
-      The task 'kubectl-w' wrapps your kubectl and referes to the local whopper automatically by specifying the flag '--kubeconfig'.
+      The task 'kubectl-w' wrap's your kubectl and refers to the local whopper automatically by specifying the flag '--kubeconfig'.
     desc: Pull kubeconfig to access whopper cluster
     cmds:
       - KUBECONFIG={{.LOCAL_WHOPPER_KUBECONFIG_PATH}} gcloud container clusters get-credentials {{.CLUSTER_NAME}} --region={{.CLUSTER_REGION}} --project {{.GCP_PROJECT}}

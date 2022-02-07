@@ -29,7 +29,7 @@ tasks:
       - task: install-operator-ts
       - echo "Install and update golang dependencies"
       - task: update-deps-go
-      - echo "Pull googleapi repositorty as it is getting used to build the whopper API"
+      - echo "Pull googleapi repository as it is getting used to build the whopper API"
       - task: pull-googleapi-language-proto
       - echo "Compile gRPC Api code"
       - task: compile-grpc
@@ -56,7 +56,7 @@ tasks:
 
   pull-googleapi-language-proto:
     cmds:
-      - echo "The following command might need root priviledges. If so, runs with 'sudo'".
+      - echo "The following command might need root privileges. If so, runs with 'sudo'".
       - cmd: git clone https://github.com/googleapis/googleapis {{.API_FOLDER}}/googleapis
         ignore_error: true
     generates:

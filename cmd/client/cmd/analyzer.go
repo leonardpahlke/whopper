@@ -15,9 +15,9 @@
 package cmd
 
 import (
-	"climatewhopper/pkg/whopperutil"
 	"errors"
 	"fmt"
+	"whopper/pkg/whopperutil"
 
 	"github.com/spf13/cobra"
 )
