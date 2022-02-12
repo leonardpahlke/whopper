@@ -14,71 +14,57 @@
 
 package cmd
 
-import (
-	"context"
-	"fmt"
-	"time"
-	"whopper/pkg/api"
-	"whopper/pkg/whopperutil"
+// var discovererRequest = &api.DiscovererRequest{
+// 	Info: []*api.InDiscovererInfo{{
+// 		Newspaper: "taz",
+// 		Url:       "https://taz.de/!t5204208/",
+// 		LatestId:  5816465,
+// 	}},
+// }
 
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
-)
+// func init() {
+// 	rootCmd.AddCommand(discovererCmd)
+// 	// TODO: add flags or something to update client request
+// 	// discovererCmd.Flags().String("id", downloaderRequest.Id, "request identifier that is used")
+// 	// discovererCmd.Flags().String("url", downloaderRequest.Url, "article url which will be downloaded")
+// }
 
-var discovererRequest = &api.DiscovererRequest{
-	Info: []*api.InDiscovererInfo{{
-		Newspaper: "taz",
-		Url:       "https://taz.de/!t5204208/",
-		LatestId:  5816465,
-	}},
-}
+// var discovererCmd = &cobra.Command{
+// 	Use:          string(whopperutil.WhopperControllerDiscoverer),
+// 	Short:        fmt.Sprintf("Send a request to the whopper-controller %s server", whopperutil.WhopperControllerDiscoverer),
+// 	SilenceUsage: true,
+// 	RunE: func(cmd *cobra.Command, args []string) error {
+// 		return runDiscovererClient(cfg)
+// 	},
+// }
 
-func init() {
-	rootCmd.AddCommand(discovererCmd)
-	// TODO: add flags or something to update client request
-	// discovererCmd.Flags().String("id", downloaderRequest.Id, "request identifier that is used")
-	// discovererCmd.Flags().String("url", downloaderRequest.Url, "article url which will be downloaded")
-}
+// // discoverer client function
+// func runDiscovererClient(cfg *clientConfig) error {
+// 	cfg.logger.Infof("start client %s", whopperutil.WhopperControllerDiscoverer)
 
-var discovererCmd = &cobra.Command{
-	Use:          string(whopperutil.WhopperControllerDiscoverer),
-	Short:        fmt.Sprintf("Send a request to the whopper-controller %s server", whopperutil.WhopperControllerDiscoverer),
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDiscovererClient(cfg)
-	},
-}
+// 	// TODO: think about refactoring this part of the code
+// 	// Set up a connection to the server.
+// 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", cfg.grpcHost, cfg.grpcPort), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+// 	if err != nil {
+// 		return errors.Wrap(err, "could not connect using gRPC")
+// 	}
+// 	defer conn.Close()
 
-// discoverer client function
-func runDiscovererClient(cfg *clientConfig) error {
-	cfg.logger.Infof("start client %s", whopperutil.WhopperControllerDiscoverer)
+// 	// Create a new downloader client
+// 	c := api.NewDiscovererClient(conn)
 
-	// TODO: think about refactoring this part of the code
-	// Set up a connection to the server.
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", cfg.grpcHost, cfg.grpcPort), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
-	if err != nil {
-		return errors.Wrap(err, "could not connect using gRPC")
-	}
-	defer conn.Close()
+// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+// 	defer cancel()
+// 	ctx = metadata.AppendToOutgoingContext(ctx, "dapr-app-id", string(whopperutil.WhopperControllerDiscoverer))
 
-	// Create a new downloader client
-	c := api.NewDiscovererClient(conn)
+// 	// Send download request to server
+// 	r, err := c.Discover(ctx, discovererRequest)
+// 	if err != nil {
+// 		return errors.Wrap(err, "could not perform a discover request")
+// 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
-	defer cancel()
-	ctx = metadata.AppendToOutgoingContext(ctx, "dapr-app-id", string(whopperutil.WhopperControllerDiscoverer))
+// 	// TODO: check head
 
-	// Send download request to server
-	r, err := c.Discover(ctx, discovererRequest)
-	if err != nil {
-		return errors.Wrap(err, "could not perform a discover request")
-	}
-
-	// TODO: check head
-
-	cfg.logger.Infow("received response", "message", r.Head.StatusMessage, "number of articles", len(r.Articles), "unprocessed articles", r.Articles)
-	return nil
-}
+// 	cfg.logger.Infow("received response", "message", r.Head.StatusMessage, "number of articles", len(r.Articles), "unprocessed articles", r.Articles)
+// 	return nil
+// }

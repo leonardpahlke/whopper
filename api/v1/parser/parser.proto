@@ -1,0 +1,163 @@
+// Copyright 2022 Leonard Vincent Simon Pahlke
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+option go_package = "whopper/pkg/api/v1/parser";
+
+package whopper.api.v1;
+
+import "google/api/field_behavior.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/any.proto";
+import "api/v1/whopper.proto";
+
+
+//
+// PARSER API
+//
+// Parse a website article
+service ArticleParser {
+    rpc Parse (ParserRequest) returns (ParserResponse) {
+        option (google.api.http) = {
+            post: "/v1/{newspaper=newspapers/*}"
+            body: "ParserRequest"
+        };
+    }
+    rpc List (ListParsedArticlesRequest) returns (ListParsedArticlesResponse){
+        option (google.api.http) = {
+            get: "/v1/{newspaper=newspapers/*}/articles"
+        };
+    }
+    rpc Get (GetParsedArticleRequest) returns (GetParsedArticleResponse) {
+        option (google.api.http) = {
+            get: "/v1/{newspaper=newspapers/*/articles/*}"
+        };
+    }
+    // Get a list of parsers that can be used to parse a newspaper website
+    // Its possible to have multiple parsers per website
+    rpc GetParsers (google.protobuf.Empty) returns (GetParsersResponse) {
+        option (google.api.http) = {
+            get: "/v1/parsers"
+        };
+    }
+    // Get a list of supported newspapers
+    rpc GetNewspapers (google.protobuf.Empty) returns (GetNewspapersResponse) {
+        option (google.api.http) = {
+            get: "/v1/newspapers"
+        };
+    }
+    rpc Update (ParsedArticle) returns (ParsedArticle){
+        option (google.api.http) = {
+            patch: "/v1/{ParsedArticle.newspaper=newspapers/*/ParsedArticle.id=ids/*/articles/*}"
+            body: "ParsedArticle"
+        };
+    }
+    rpc Delete (DeleteParsedArticleRequest) returns (google.protobuf.Empty){
+        option (google.api.http) = {
+            delete: "/v1/{newspaper=newspapers/*/id=ids/*/articles/*}"
+        };
+    }
+}
+
+// Scraped article information
+message ParsedArticle {
+    // Article identifier
+    string id = 1;
+    // Article newspaper 
+    string newspaper = 2;
+    // URL of the article text
+    string url = 3;
+    // Article release date
+    string releaseDate = 4;
+    // Title of the article
+    string title = 5;
+    // Subtitle of the article
+    string subtitle = 6;
+    // General description of the article
+    string description = 7;
+    // Category of the article on the newspaper
+    string category = 8;
+    // Article text how it is written on the website
+    string originalText = 9;
+    // Article text translated if the original language is not english
+    string translatedText = 10;
+    // Tells if the article has been translated
+    bool articletranslated = 11;
+    // Original language of the article
+    string originalLanguage = 12;
+    // Article data which has not been parsed or processed yet
+    string rawArticleText = 13;
+    // Anything else that could be useful but that is not standardized here
+    repeated google.protobuf.Any details = 14;
+    // Meta information about the data entry
+    Meta entry_meta = 15;
+    // The parser that has been used to parse the data
+    Parser parser = 16;
+}
+
+// List
+message ListParsedArticlesRequest {
+    // The parent should be set to a newspaper
+    string newspaper = 1 [(google.api.field_behavior) = REQUIRED];
+    // The maximum number of items to return.
+    int32 page_size = 2 [(google.api.field_behavior) = REQUIRED];
+    // The next_page_token value returned from a previous List request, if any.
+    string page_token = 3 [(google.api.field_behavior) = REQUIRED];
+}
+message ListParsedArticlesResponse {
+    repeated ParsedArticle parsed_articles = 1;
+    // Token to retrieve the next page of results, or empty if there are no
+    // more results in the list.
+    string next_page_token = 2;
+    Status status = 3;
+}
+
+// Get
+message GetParsedArticleRequest {
+    string newspaper = 1 [(google.api.field_behavior) = REQUIRED];
+    string id = 2 [(google.api.field_behavior) = REQUIRED];
+}
+message GetParsedArticleResponse {
+    ParsedArticle parsed_article = 1;
+    Status status = 2;
+}
+message GetParsersResponse {
+    repeated Parser parsers = 1;
+}
+message GetNewspapersResponse {
+    repeated Newspaper newspapers = 1;
+}
+
+
+// Parse 
+message ParserRequest {
+    // Parser to execute the URL article parsing
+    Parser parser = 1 [(google.api.field_behavior) = REQUIRED];
+    // Can be set to a BCP-47 language code for article translation
+    string translation_language = 2 [(google.api.field_behavior) = OPTIONAL];
+    // Article URL that can be parsed by the specified parser and shows the full article text
+    string url = 3 [(google.api.field_behavior) = REQUIRED];
+}
+message ParserResponse {
+    repeated ParsedArticle articles = 1;
+    Status status = 2;
+}
+
+// Delete
+message DeleteParsedArticleRequest {
+    string newspaper = 1 [(google.api.field_behavior) = REQUIRED];
+    string id = 2 [(google.api.field_behavior) = REQUIRED];
+}

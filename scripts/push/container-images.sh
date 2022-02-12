@@ -19,6 +19,7 @@ declare -i i=1
 for SV in "${servers[@]}"; do
     echo "🕐 $i Build and push container image $SV"
     KO_DOCKER_REPO=$REPO/whopper-$SV ko publish ./cmd/server/$SV --bare -t $VERSION
+    grype $REPO/whopper-$SV:$VERSION
     i+=1
 done
 

@@ -1,49 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: translator
+  name: discoverer
   namespace: default
   labels:
-    app: translator
+    app: discoverer
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: translator
+      app: discoverer
   template:
     metadata:
       labels:
-        app: translator
+        app: discoverer
       annotations:
         dapr.io/enabled: "true"
-        dapr.io/app-id: "translator"
+        dapr.io/app-id: "discoverer"
         dapr.io/app-protocol: "grpc"
         dapr.io/app-port: "50051"
         dapr.io/config: "serverconfig"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: analyzer
-  namespace: default
-  labels:
-    app: analyzer
-spec:
-  replicas: 1
-  containers:
-  - name: analyzer
-    image: ...
-  selector:
-    matchLabels:
-      app: analyzer
-  template:
-    metadata:
-      labels:
-        app: analyzer
-      annotations:
-        dapr.io/enabled: "true"
-        dapr.io/app-id: "analyzer"
-        dapr.io/app-protocol: "grpc"
-        dapr.io/app-port: "50052"
-        dapr.io/config: "serverconfig"
+    spec:
+      containers:
+      - name: discoverer
+        image: quay.io/leonardpahlke/whopper-discoverer:latest
 ---

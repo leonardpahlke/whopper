@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package newsparser
+package taz
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
-	"whopper/pkg/api"
+	"whopper/pkg/newsparser/models"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/foolin/pagser"
@@ -25,55 +26,59 @@ import (
 )
 
 //
-// Discoverer Parser
+// TAZ NEWSPAPER PARSER
 //
 
-// TazNewsParser taz parser struct
-type TazNewsParser struct {
-	newspaperName Newspaper
+var Newspaper = models.Newspaper{
+	Name:       "taz",
+	BaseURL:    "https://taz.de",
+	LookupURLs: []string{}, // TODO: not sure about this one
 }
 
-// TazParser is used to parse taz articles
-var TazParser = TazNewsParser{
-	newspaperName: "taz",
-}
+// NewsParserV1 taz parser struct
+type NewsParserV1 struct{}
 
 // GetName just returns the newspaper name which is used to match the parser
-func (n TazNewsParser) GetName() Newspaper {
-	return n.newspaperName
+func (n NewsParserV1) GetIdentity() models.Parser {
+	return models.Parser{
+		Name:       fmt.Sprintf("%s-parser", Newspaper.Name),
+		Version:    "1.0",
+		Newspapers: []*models.Newspaper{&Newspaper},
+	}
 }
 
 // DiscoverArticles used to scan taz newspaper category pages for articles
 // if all articles should get returned, set stopAtID to 0 or any ID which does not match
-func (n TazNewsParser) DiscoverArticles(p *pagser.Pagser, getWebsiteData func() (string, error), stopAtID int64) ([]*api.ArticleHead, error) {
+func (n NewsParserV1) DiscoverArticles(p *pagser.Pagser, getWebsiteData func() (string, error), stopAtID int64) ([]*models.DiscoveredArticle, error) {
 	body, err := getWebsiteData()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get website data")
 	}
 
 	// parse website data into a struct which contains information about how to parse the website
-	var data TazArticleDiscovery
+	var data ArticleDiscovery
 	err = p.Parse(&data, body)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse taz article html data")
 	}
 
 	// transform taz specific data into a generic format
-	articleHeads := []*api.ArticleHead{}
+	articleHeads := []*models.DiscoveredArticle{}
 	for _, e := range data.Articles {
 		if e.ID == stopAtID {
 			// The website structures articles in order, this allows to break if the ID matches -- all articles after that have already been processed
 			break
 		}
 		if e.ID != 0 {
-			articleHeads = append(articleHeads, &api.ArticleHead{
-				Id:          e.ID,
-				Url:         e.URL,
+			articleHeads = append(articleHeads, &models.DiscoveredArticle{
+				ID:          strconv.FormatInt(e.ID, 10),
+				URL:         e.URL,
 				ReleaseDate: e.Date,
 				Title:       e.Title,
 				Subtitle:    e.SubTitle,
 				Description: e.Description,
 				Category:    data.Category,
+				Newspaper:   "taz",
 			})
 		}
 	}
@@ -82,25 +87,24 @@ func (n TazNewsParser) DiscoverArticles(p *pagser.Pagser, getWebsiteData func() 
 }
 
 // ParseArticle used to parse taz newspaper articles
-func (n TazNewsParser) ParseArticle(p *pagser.Pagser, articleText *string) (*api.ArticleBody, error) {
-	var data TazArticleTextParser
+func (n NewsParserV1) ParseArticle(p *pagser.Pagser, articleText *string) (*string, error) {
+	var data ArticleTextParser
 	err := p.Parse(&data, *articleText)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse taz article")
 	}
-	return &api.ArticleBody{
-		OriginalText: strings.Join(data.Paragraphs, " "),
-	}, nil
+	originalText := strings.Join(data.Paragraphs, " ")
+	return &originalText, nil
 }
 
-// TazArticleDiscovery represents the taz website overview
-type TazArticleDiscovery struct {
-	Category string                     `pagser:"title->CleanTazCategory()"`
-	Articles []TazArticleDiscoveryEntry `pagser:"ul[role='directory'][class='news directory'] li"`
+// ArticleDiscovery represents the taz website overview
+type ArticleDiscovery struct {
+	Category string                  `pagser:"title->CleanTazCategory()"`
+	Articles []ArticleDiscoveryEntry `pagser:"ul[role='directory'][class='news directory'] li"`
 }
 
-// TazArticleDiscoveryEntry represents one of the articles which is listed on the article overview page
-type TazArticleDiscoveryEntry struct {
+// ArticleDiscoveryEntry represents one of the articles which is listed on the article overview page
+type ArticleDiscoveryEntry struct {
 	ID          int64  `pagser:"meta[itemprop='cms-article-ID']->attr(content)"`
 	URL         string `pagser:"a->AddTazURL()"`
 	Date        string `pagser:"li[class='date']->RemoveSpaces()"`
@@ -109,18 +113,18 @@ type TazArticleDiscoveryEntry struct {
 	Description string `pagser:"p->text()"`
 }
 
-// CleanTazCategory this method is used to clean up the taz category
-func (d TazArticleDiscovery) CleanTazCategory(node *goquery.Selection, args ...string) (out interface{}, err error) {
+// CleanCategory this method is used to clean up the taz category
+func (d ArticleDiscovery) CleanCategory(node *goquery.Selection, args ...string) (out interface{}, err error) {
 	return strings.TrimSpace(strings.Replace(node.Text(), " - taz.de", "", 1)), nil
 }
 
-// AddTazURL this method is used to add the taz url to article reference path
-func (d TazArticleDiscovery) AddTazURL(node *goquery.Selection, args ...string) (out interface{}, err error) {
+// AddURL this method is used to add the taz url to article reference path
+func (d ArticleDiscovery) AddURL(node *goquery.Selection, args ...string) (out interface{}, err error) {
 	return fmt.Sprintf("https://taz.de%s", node.AttrOr("href", "")), nil
 }
 
 // RemoveSpaces this method is used to remove all spaces from a text
-func (d TazArticleDiscovery) RemoveSpaces(node *goquery.Selection, args ...string) (out interface{}, err error) {
+func (d ArticleDiscovery) RemoveSpaces(node *goquery.Selection, args ...string) (out interface{}, err error) {
 	return strings.ReplaceAll(node.Text(), " ", ""), nil
 }
 
@@ -128,7 +132,7 @@ func (d TazArticleDiscovery) RemoveSpaces(node *goquery.Selection, args ...strin
 // Article Parser
 ///
 
-// TazArticleTextParser represents the structure of a taz article
-type TazArticleTextParser struct {
+// ArticleTextParser represents the structure of a taz article
+type ArticleTextParser struct {
 	Paragraphs []string `pagser:"article[class='sectbody'][itemprop='articleBody'] p[xmlns='']->text()"`
 }

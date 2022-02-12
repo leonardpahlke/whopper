@@ -28,5 +28,5 @@ jobs:
       - name: Install operator node packages
         run: task verify:install-operator-ts
 
-      - name: Install whopper node packages
+      - name: Verify typescript code
         run: task verify:ts

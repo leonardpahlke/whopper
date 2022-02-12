@@ -1,0 +1,130 @@
+// Copyright 2022 Leonard Vincent Simon Pahlke
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+option go_package = "whopper/pkg/api/v1/analyzer";
+
+package whopper.api.v1;
+
+import "google/api/field_behavior.proto";
+import "google/cloud/language/v1/language_service.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "api/v1/whopper.proto";
+
+
+//
+// ANALYZER API
+//
+service Analyzer {
+    rpc Analyze (AnalyzerRequest) returns (AnalyzerResponse) {
+        option (google.api.http) = {
+            post: "/v1/{group=groups/*}"
+            body: "analyzerRequest"
+        };
+    }
+    rpc List (ListAnalyzedTextsRequest) returns (ListAnalyzedTextsResponse){
+        option (google.api.http) = {
+            get: "/v1/{group=groups/*}/texts"
+        };
+    }
+    rpc Get (GetAnalyzedTextRequest) returns (GetAnalyzedTextResponse) {
+        option (google.api.http) = {
+            get: "/v1/{group=groups/*/texts/*}"
+        };
+    }
+    rpc GetGroups (google.protobuf.Empty) returns (GetGroupsResponse) {
+        option (google.api.http) = {
+            get: "/v1/groups"
+        };
+    }
+    rpc Update (AnalyzedText) returns (AnalyzedText){
+        option (google.api.http) = {
+            patch: "/v1/{AnalyzedText.group=groups/*/AnalyzedText.id=ids/*/texts/*}"
+            body: "AnalyzedText"
+        };
+    }
+    rpc Delete (DeleteAnalyzedTextRequest) returns (google.protobuf.Empty){
+        option (google.api.http) = {
+            delete: "/v1/{group=groups/*/id=ids/*/texts/*}"
+        };
+    }
+}
+
+
+// General article information which is provided by the article discoverer
+message AnalyzedText {
+    // Id of the article (unique)
+    string id = 1;
+    // Group to sort the article to
+    string group = 2;
+    // Analyzed entities
+    google.cloud.language.v1.AnalyzeEntitiesResponse analyzeEntitiesResponse = 3;
+    // Analyzed sentiment
+    google.cloud.language.v1.AnalyzeSentimentResponse analyzeSentimentResponse = 4;
+    // Meta information set for the stored entry
+    Meta entry_meta = 5;
+}
+
+// List
+message ListAnalyzedTextsRequest {
+    // The parent should be set to a group
+    string group = 1 [(google.api.field_behavior) = REQUIRED];
+    // The maximum number of items to return.
+    int32 page_size = 2 [(google.api.field_behavior) = REQUIRED];
+    // The next_page_token value returned from a previous List request, if any.
+    string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+message ListAnalyzedTextsResponse {
+    repeated AnalyzedText discovered_texts = 1;
+    // Token to retrieve the next page of results, or empty if there are no
+    // more results in the list.
+    string next_page_token = 2;
+    Status status = 3;
+}
+
+// Get
+message GetAnalyzedTextRequest {
+    // group of the requested article
+    string group = 1 [(google.api.field_behavior) = REQUIRED];
+    // Id of the requested article 
+    string id = 2 [(google.api.field_behavior) = REQUIRED];
+}
+message GetAnalyzedTextResponse {
+    AnalyzedText discovered_article = 1;
+    Status status = 2;
+}
+message GetGroupsResponse {
+    repeated string group = 1;
+}
+
+
+// Discover
+message AnalyzerRequest {
+    // group to start the discovery
+    string group = 1 [(google.api.field_behavior) = REQUIRED];
+}
+message AnalyzerResponse {
+    repeated AnalyzedText texts = 1;
+    Status status = 2;
+}
+
+// Delete
+message DeleteAnalyzedTextRequest {
+    // group of the article that should get deleted
+    string group = 1 [(google.api.field_behavior) = REQUIRED];
+    // Id of the article that should get deleted
+    string id = 2 [(google.api.field_behavior) = REQUIRED];
+}

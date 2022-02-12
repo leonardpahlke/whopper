@@ -16,104 +16,127 @@ package newsparser
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
-	"whopper/pkg/api"
+	"whopper/pkg/newsparser/models"
+	"whopper/pkg/newsparser/taz"
 
 	"github.com/foolin/pagser"
-	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
 )
 
-// NewsParser is used to define a newspaper parser
-type NewsParser interface {
-	GetName() Newspaper
-	DiscoverArticles(p *pagser.Pagser, getWebsiteData func() (string, error), stopAtID int64) ([]*api.ArticleHead, error)
-	ParseArticle(p *pagser.Pagser, articleText *string) (*api.ArticleBody, error)
+// INewsParser is used to define a newspaper parser
+type INewsParser interface {
+	GetIdentity() models.Parser
+	DiscoverArticles(p *pagser.Pagser, getWebsiteData func() (string, error), stopAtID int64) ([]*models.DiscoveredArticle, error)
+	ParseArticle(p *pagser.Pagser, articleText *string) (*string, error)
 }
 
-// Newspaper is used to match a parser to a newspaper
-type Newspaper string
+// ImplementedNewsParsers contains all the parsers that are available
+var ImplementedNewsParsers = []INewsParser{taz.NewsParserV1{}}
 
-// NewsParsers contains all the parsers that are available
-var NewsParsers = []NewsParser{TazParser}
+// GetAvailableParserIdentities is used every implemeneted parser identification
+func GetAvailableParserIdentities() []*models.Parser {
+	parserIDs := []*models.Parser{}
+	for _, e := range ImplementedNewsParsers {
+		identity := e.GetIdentity()
+		parserIDs = append(parserIDs, &identity)
+	}
+	return parserIDs
+}
 
-// DiscoveryLookup this type is used if multiple discoveries should happen
-type DiscoveryLookup struct {
-	Newspaper   Newspaper
-	Error       error
-	ArticleHead []*api.ArticleHead
+// GetAvailableParserIdentities is used every implemeneted parser identification
+func GetSupportedNewspapers() []*models.Newspaper {
+	// loop over all parsers and sum up all the supported newspapers
+	// 	a map is used to avoid duplicates
+	supportedNewspapersMap := map[string]*models.Newspaper{}
+	for _, e := range ImplementedNewsParsers {
+		for _, newspaper := range e.GetIdentity().Newspapers {
+			supportedNewspapersMap[newspaper.Name] = newspaper
+		}
+	}
+	supportedNewspapers := make([]*models.Newspaper, len(supportedNewspapersMap))
+	i := 0
+	for _, v := range supportedNewspapersMap {
+		supportedNewspapers[i] = v
+		i++
+	}
+	return supportedNewspapers
 }
 
 // GetNewspaperParser is used to simplify how to get the right parser for a newspaper article
-func GetNewspaperParser(newspaper Newspaper) (NewsParser, error) {
-	for _, parser := range NewsParsers {
-		if parser.GetName() == newspaper {
+func GetNewspaperParser(searchParserID models.Parser) (INewsParser, error) {
+	for _, parser := range ImplementedNewsParsers {
+		parserID := parser.GetIdentity()
+		if parserID.Name == searchParserID.Name && parserID.Version == searchParserID.Version {
 			return parser, nil
 		}
 	}
-	return nil, fmt.Errorf("could not find a parser for newspaper %s", newspaper)
+	return nil, fmt.Errorf("could not find a parser implementation, %v", searchParserID)
 }
 
-// BatchDiscovery used to run multiple concurrent website discoveries
-func BatchDiscovery(discoveryBatch []*api.InDiscovererInfo) ([]*api.ArticleHead, error) {
-	p := pagser.New()
-	discoverBatch := func(done <-chan interface{}, in ...*api.InDiscovererInfo) <-chan DiscoveryLookup {
-		chanLookups := make(chan DiscoveryLookup)
-		go func() {
-			defer close(chanLookups)
-			for i := range in {
-				// get article parser by newspaper and run DiscoverArticles
-				discoveredArticleHeads := []*api.ArticleHead{}
-				parser, err := GetNewspaperParser(Newspaper(in[i].Newspaper))
-				// if no newspaper parser could be found the DiscoverArticle method will not get executed (skipped as it will error anyways)
-				if err == nil {
-					discoveredArticleHeads, err = parser.DiscoverArticles(p, func() (string, error) {
-						return GetWebsiteData(in[i].Url)
-					}, in[i].LatestId)
-				}
-				select {
-				case <-done:
-					return
-				case chanLookups <- DiscoveryLookup{
-					Newspaper:   Newspaper(in[i].Newspaper),
-					Error:       err,
-					ArticleHead: discoveredArticleHeads,
-				}:
-				}
-			}
-		}()
-		return chanLookups
-	}
+// // DiscoveryLookup this type is used if multiple discoveries should happen
+// type DiscoveryLookup struct {
+// 	Newspaper   Newspaper
+// 	Error       error
+// 	ArticleHead []*api.ArticleHead
+// }
 
-	done := make(chan interface{})
-	defer close(done)
-	discoveredArticles := []*api.ArticleHead{}
-	var err error
+// // BatchDiscovery used to run multiple concurrent website discoveries
+// func BatchDiscovery(discoveryBatch []*api.InDiscovererInfo) ([]*api.ArticleHead, error) {
+// 	p := pagser.New()
+// 	discoverBatch := func(done <-chan interface{}, in ...*api.InDiscovererInfo) <-chan DiscoveryLookup {
+// 		chanLookups := make(chan DiscoveryLookup)
+// 		go func() {
+// 			defer close(chanLookups)
+// 			for i := range in {
+// 				// get article parser by newspaper and run DiscoverArticles
+// 				discoveredArticleHeads := []*api.ArticleHead{}
+// 				parser, err := GetNewspaperParser(Newspaper(in[i].Newspaper))
+// 				// if no newspaper parser could be found the DiscoverArticle method will not get executed (skipped as it will error anyways)
+// 				if err == nil {
+// 					discoveredArticleHeads, err = parser.DiscoverArticles(p, func() (string, error) {
+// 						return GetWebsiteData(in[i].Url)
+// 					}, in[i].LatestId)
+// 				}
+// 				select {
+// 				case <-done:
+// 					return
+// 				case chanLookups <- DiscoveryLookup{
+// 					Newspaper:   Newspaper(in[i].Newspaper),
+// 					Error:       err,
+// 					ArticleHead: discoveredArticleHeads,
+// 				}:
+// 				}
+// 			}
+// 		}()
+// 		return chanLookups
+// 	}
 
-	// Collect data from buffered channel
-	for lookups := range discoverBatch(done, discoveryBatch...) {
-		if lookups.Error != nil {
-			err = multierror.Append(err, errors.Wrapf(lookups.Error, "error discovering articles for newspaper %s", lookups.Newspaper))
-		} else {
-			discoveredArticles = append(discoveredArticles, lookups.ArticleHead...)
-		}
-	}
-	return discoveredArticles, err
-}
+// 	done := make(chan interface{})
+// 	defer close(done)
+// 	discoveredArticles := []*api.ArticleHead{}
+// 	var err error
 
-// GetWebsiteData simple http get wrap
-func GetWebsiteData(webURL string) (string, error) {
-	resp, err := http.Get(strings.TrimSpace(webURL))
-	if err != nil {
-		return "", errors.Wrap(err, "could not perform http request with http.Get")
-	}
-	defer resp.Body.Close()
+// 	// Collect data from buffered channel
+// 	for lookups := range discoverBatch(done, discoveryBatch...) {
+// 		if lookups.Error != nil {
+// 			err = multierror.Append(err, errors.Wrapf(lookups.Error, "error discovering articles for newspaper %s", lookups.Newspaper))
+// 		} else {
+// 			discoveredArticles = append(discoveredArticles, lookups.ArticleHead...)
+// 		}
+// 	}
+// 	return discoveredArticles, err
+// }
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", errors.Wrap(err, "could not read http response body with ioutil.ReadAll")
-	}
-	return string(body), nil
-}
+// // GetWebsiteData simple http get wrapper
+// func GetWebsiteData(webURL string) (string, error) {
+// 	resp, err := http.Get(strings.TrimSpace(webURL))
+// 	if err != nil {
+// 		return "", errors.Wrap(err, "could not perform http request with http.Get")
+// 	}
+// 	defer resp.Body.Close()
+
+// 	body, err := ioutil.ReadAll(resp.Body)
+// 	if err != nil {
+// 		return "", errors.Wrap(err, "could not read http response body with ioutil.ReadAll")
+// 	}
+// 	return string(body), nil
+// }

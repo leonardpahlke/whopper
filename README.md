@@ -32,27 +32,29 @@ After that go a head to the next chapter [Project lifecycle](#project-lifecycle)
 -  `protoc` is used to compile proto3 api file: [installation guide](https://grpc.io/docs/protoc-installation/)
    -  `protoc-gen-go`: `$ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest` [gPRC quickstart](https://grpc.io/docs/languages/go/quickstart/)
    -  `protoc-gen-go-grpc`: `$ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1` [gPRC quickstart](https://grpc.io/docs/languages/go/quickstart/)
-
+- `ko` to build container images: [installation guide](https://github.com/google/ko#install)
+- `grype` for vulnerability scanning: [installation guide](https://github.com/anchore/grype#installation)
 
 You can check if installations are met by running `sh ./scripts/check-installations.sh` or `task verify:check`.
 
 ```
 $ task -l
 task: Available tasks for this project:
-* deploy:pull-whopper-config: Pull kubeconfig to access whopper cluster
-* deploy:whopper: 		        Deploy whopper infrastructure with pulumi
-* destroy:cleanup-project: 	  Delete all created it resources
-* destroy:whopper: 		        Destroy the whopper infrastructure
-* init-project: 		          Initialize project for production
-* kubectl-o: 			            kubectl wrapper to interact with operator cluster
-* kubectl-w: 			            kubectl wrapper to interact with the whopper cluster
-* scan:whopper-cluster: 	    Kubernetes cluster scan
-* test:whopper-cluster: 	    Whopper kubernets tests
-* verify-project: 		        Run all checks to verify project quality
-* verify:code: 			          Verify project code
-* verify:go: 			            Verify project golang code
-* verify:install: 		        Install and update project dependencies
-* verify:ts: 			            Verify project typescript code
+* deploy:container-image-push: 	Push a golang container to quay.io
+* deploy:pull-whopper-config: 	Pull kubeconfig to access whopper cluster
+* deploy:whopper: 		Deploy whopper infrastructure with pulumi
+* destroy:cleanup-project: 	Delete all created it resources
+* destroy:whopper: 		Destroy the whopper infrastructure
+* init-project: 		Initialize project for production
+* kubectl-o: 			kubectl wrapper to interact with operator cluster
+* kubectl-w: 			kubectl wrapper to interact with the whopper cluster
+* scan:whopper-cluster: 	Kubernetes cluster scan
+* test:whopper-cluster: 	Whopper kubernetes tests
+* verify-project: 		Run all checks to verify project quality
+* verify:code: 			Verify project code
+* verify:go: 			Verify project golang code
+* verify:install: 		Install and update project dependencies
+* verify:ts: 			Verify project typescript code
 ```
 
 Additional information can be get by setting the `--summary` flag.

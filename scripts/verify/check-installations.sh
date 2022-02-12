@@ -14,6 +14,7 @@ cmds=(
     "task --version"
     "protoc --version"
     "kubectl version --client"
+    "ko version"
 )
 
 declare -i i=1

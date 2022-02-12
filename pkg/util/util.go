@@ -85,3 +85,5 @@ const (
 	// Fatal log level /5
 	Fatal WrapLogLevel = "FATAL"
 )
+
+var WrapLogLevels = []WrapLogLevel{Debug, Info, Warning, Error, Dpanic, Panic, Fatal}

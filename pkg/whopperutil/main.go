@@ -18,7 +18,10 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"whopper/pkg/newsparser/models"
 	"whopper/pkg/util"
+
+	whopper "whopper/pkg/api/v1"
 
 	language "cloud.google.com/go/language/apiv1"
 	"cloud.google.com/go/translate"
@@ -40,8 +43,6 @@ var (
 	WhopperControllerDiscoverer WhopperServerName = "discoverer"
 	// WhopperControllerHub hub server name
 	WhopperControllerHub WhopperServerName = "hub"
-	// WhopperEngineDownloader downloader server name
-	WhopperEngineDownloader WhopperServerName = "downloader"
 	// WhopperEngineParser parser server name
 	WhopperEngineParser WhopperServerName = "parser"
 	// WhopperEngineTranslator translator server name
@@ -50,7 +51,7 @@ var (
 	WhopperEngineAnalyzer WhopperServerName = "analyzer"
 
 	// WhopperServers available whopper servers
-	WhopperServers = []WhopperServerName{WhopperControllerDiscoverer, WhopperControllerHub, WhopperEngineDownloader, WhopperEngineParser, WhopperEngineTranslator, WhopperEngineAnalyzer}
+	WhopperServers = []WhopperServerName{WhopperControllerDiscoverer, WhopperControllerHub, WhopperEngineParser, WhopperEngineTranslator, WhopperEngineAnalyzer}
 )
 
 // WhopperServerClientIn define how to build the WhopperServerMeta with BuildWhopperServer
@@ -164,6 +165,7 @@ func (m *WhopperServerClients) Close() {
 const DefaultConfigFilenameSuffix = "-config"
 
 // SetViperCfg simplify how to setup the viper configuration
+// TODO: deprecated
 func SetViperCfg(configName string, setViperDefaults func(), config interface{}) {
 	// set config meta
 	viper.SetConfigName(configName)
@@ -188,4 +190,31 @@ func SetViperCfg(configName string, setViperDefaults func(), config interface{})
 	if err := viper.Unmarshal(config); err != nil {
 		panic(fmt.Errorf("unable to decode into struct: %w", err))
 	}
+}
+
+// TranslateNewspaperDefinitions is used to convert between the API and Parser.Model types
+// 	the reasoning behind this is briefly descirbed in the models file under the newsparser dir
+func TranslateNewspaperDefinitions(newspaper []*models.Newspaper) []*whopper.Newspaper {
+	w := []*whopper.Newspaper{}
+	for _, e := range newspaper {
+		w = append(w, &whopper.Newspaper{
+			Name:       e.Name,
+			BaseUrl:    e.BaseURL,
+			LookupUrls: e.LookupURLs,
+		})
+	}
+	return w
+}
+
+// TranslateParserDefinitions is used to convert between the API and Parser.Model types
+func TranslateParserDefinitions(parsers []*models.Parser) []*whopper.Parser {
+	p := []*whopper.Parser{}
+	for _, e := range parsers {
+		p = append(p, &whopper.Parser{
+			Name:       e.Name,
+			Version:    e.Version,
+			Newspapers: TranslateNewspaperDefinitions(e.Newspapers),
+		})
+	}
+	return p
 }
