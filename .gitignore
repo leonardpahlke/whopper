@@ -22,7 +22,4 @@ docs/*
 
 bin/
 
-# TODO: check if this should get ignored
-# Pulumi.*.yaml
-
 .kube/*

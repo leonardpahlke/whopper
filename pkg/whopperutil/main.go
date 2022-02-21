@@ -27,8 +27,6 @@ import (
 	"cloud.google.com/go/translate"
 	dapr "github.com/dapr/go-sdk/client"
 	"github.com/foolin/pagser"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -165,42 +163,39 @@ func (m *WhopperServerClients) Close() {
 const DefaultConfigFilenameSuffix = "-config"
 
 // SetViperCfg simplify how to setup the viper configuration
-// TODO: deprecated
-func SetViperCfg(configName string, setViperDefaults func(), config interface{}) {
-	// set config meta
-	viper.SetConfigName(configName)
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./climate-whopper/configs")
-	viper.AddConfigPath("$HOME/climate-whopper/configs")
-	viper.AddConfigPath("./configs")
-	// set config defaults
-	setViperDefaults()
-	// bind flags
-	pflag.Parse()
-	err := viper.BindPFlags(pflag.CommandLine)
-	if err != nil {
-		panic(fmt.Errorf("fatal error binding flags: %w", err))
-	}
-	// read config
-	err = viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %w", err))
-	}
+// func SetViperCfg(configName string, setViperDefaults func(), config interface{}) {
+// 	// set config meta
+// 	viper.SetConfigName(configName)
+// 	viper.SetConfigType("yaml")
+// 	viper.AddConfigPath("./climate-whopper/configs")
+// 	viper.AddConfigPath("$HOME/climate-whopper/configs")
+// 	viper.AddConfigPath("./configs")
+// 	// set config defaults
+// 	setViperDefaults()
+// 	// bind flags
+// 	pflag.Parse()
+// 	err := viper.BindPFlags(pflag.CommandLine)
+// 	if err != nil {
+// 		panic(fmt.Errorf("fatal error binding flags: %w", err))
+// 	}
+// 	// read config
+// 	err = viper.ReadInConfig()
+// 	if err != nil {
+// 		panic(fmt.Errorf("fatal error config file: %w", err))
+// 	}
 
-	if err := viper.Unmarshal(config); err != nil {
-		panic(fmt.Errorf("unable to decode into struct: %w", err))
-	}
-}
+// 	if err := viper.Unmarshal(config); err != nil {
+// 		panic(fmt.Errorf("unable to decode into struct: %w", err))
+// 	}
+// }
 
 // TranslateNewspaperDefinitions is used to convert between the API and Parser.Model types
 // 	the reasoning behind this is briefly descirbed in the models file under the newsparser dir
-func TranslateNewspaperDefinitions(newspaper []*models.Newspaper) []*whopper.Newspaper {
-	w := []*whopper.Newspaper{}
+func TranslateNewspaperDefinitions(newspaper []*models.Newspaper) []*whopper.Group {
+	w := []*whopper.Group{}
 	for _, e := range newspaper {
-		w = append(w, &whopper.Newspaper{
-			Name:       e.Name,
-			BaseUrl:    e.BaseURL,
-			LookupUrls: e.LookupURLs,
+		w = append(w, &whopper.Group{
+			Name: e.Name,
 		})
 	}
 	return w
@@ -211,9 +206,7 @@ func TranslateParserDefinitions(parsers []*models.Parser) []*whopper.Parser {
 	p := []*whopper.Parser{}
 	for _, e := range parsers {
 		p = append(p, &whopper.Parser{
-			Name:       e.Name,
-			Version:    e.Version,
-			Newspapers: TranslateNewspaperDefinitions(e.Newspapers),
+			Name: e.Name,
 		})
 	}
 	return p

@@ -20,7 +20,6 @@ package whopper.api.v1;
 
 import "google/protobuf/empty.proto";
 import "google/api/field_behavior.proto";
-import "google/api/annotations.proto";
 import "api/v1/whopper.proto";
 
 
@@ -29,51 +28,21 @@ import "api/v1/whopper.proto";
 //
 // The discoverer processes multiple requests to reduce traffic
 service Discoverer {
-    rpc Discover (DiscoverRequest) returns (DiscoverResponse) {
-        option (google.api.http) = {
-            post: "/v1/{newspaper=newspapers/*}"
-            body: "discoverRequest"
-        };
-    }
-    rpc List (ListDiscovererRequest) returns (ListDiscovererResponse){
-        option (google.api.http) = {
-            get: "/v1/{newspaper=newspapers/*}/articles"
-        };
-    }
-    rpc Get (GetDiscovererRequest) returns (DiscoveredArticle) {
-        option (google.api.http) = {
-            get: "/v1/{newspaper=newspapers/*/articles/*}"
-        };
-    }
-    rpc GetNewspapers (google.protobuf.Empty) returns (GetNewspapersResponse) {
-        option (google.api.http) = {
-            get: "/v1/newspapers"
-        };
-    }
+    rpc Discover (DiscoverRequest) returns (DiscoverResponse) {}
+    rpc List (ListDiscovererRequest) returns (ListDiscovererResponse){}
+    rpc Get (GetDiscovererRequest) returns (DiscoveredArticle) {}
+    rpc GetNewspapers (google.protobuf.Empty) returns (GetNewspapersResponse) {}
     // Get a list of parsers that can be used to parse a newspaper website
     // Its possible to have multiple parsers per website
-    rpc GetParsers (google.protobuf.Empty) returns (GetParsersResponse) {
-        option (google.api.http) = {
-            get: "/v1/parsers"
-        };
-    }
-    rpc Update (DiscoveredArticle) returns (DiscoveredArticle){
-        option (google.api.http) = {
-            patch: "/v1/{discoveredArticle.newspaper=newspapers/*/discoveredArticle.id=ids/*/articles/*}"
-            body: "discoveredArticle"
-        };
-    }
-    rpc Delete (DeleteDiscoveredArticleRequest) returns (google.protobuf.Empty){
-        option (google.api.http) = {
-            delete: "/v1/{newspaper=newspapers/*/id=ids/*/articles/*}"
-        };
-    }
+    rpc GetParsers (google.protobuf.Empty) returns (GetParsersResponse) {}
+    rpc Update (DiscoveredArticle) returns (DiscoveredArticle){}
+    rpc Delete (DeleteDiscoveredArticleRequest) returns (google.protobuf.Empty){}
 }
 
 // General article information which is provided by the article discoverer
 message DiscoveredArticle {
     // Id of the article (unique)
-    string id = 1;
+    ID id = 1;
     // URL which leads to the article text
     string url = 2;
     // article release date
@@ -87,7 +56,7 @@ message DiscoveredArticle {
     // Category of the article on the newspaper
     string category = 7;
     // Article newspaper
-    string newspaper = 8;
+    Group newspaper = 8;
     // Meta information set for the stored entry
     Meta entry_meta = 9;
 }
@@ -95,7 +64,7 @@ message DiscoveredArticle {
 // List
 message ListDiscovererRequest {
     // The parent should be set to a newspaper
-    string newspaper = 1 [(google.api.field_behavior) = REQUIRED];
+    Group newspaper = 1 [(google.api.field_behavior) = REQUIRED];
     // The maximum number of items to return.
     int32 page_size = 2 [(google.api.field_behavior) = REQUIRED];
     // The next_page_token value returned from a previous List request, if any.
@@ -111,13 +80,11 @@ message ListDiscovererResponse {
 
 // Get
 message GetDiscovererRequest {
-    // Newspaper of the requested article
-    string newspaper = 1 [(google.api.field_behavior) = REQUIRED];
     // Id of the requested article 
-    string id = 2 [(google.api.field_behavior) = REQUIRED];
+    ID id = 1 [(google.api.field_behavior) = REQUIRED];
 }
 message GetNewspapersResponse {
-    repeated Newspaper newspapers = 1;
+    repeated Group newspapers = 1;
 }
 message GetParsersResponse {
     repeated Parser parsers = 1;
@@ -127,7 +94,9 @@ message GetParsersResponse {
 // Discover
 message DiscoverRequest {
     // Newspaper to start the discovery
-    string newspaper = 1 [(google.api.field_behavior) = REQUIRED];
+    Group newspaper = 1 [(google.api.field_behavior) = REQUIRED];
+    // Parser to execute the URL article discovery parsing
+    Parser parser = 2 [(google.api.field_behavior) = REQUIRED];
 }
 message DiscoverResponse {
     repeated DiscoveredArticle articles = 1;
@@ -136,8 +105,6 @@ message DiscoverResponse {
 
 // Delete
 message DeleteDiscoveredArticleRequest {
-    // Newspaper of the article that should get deleted
-    string newspaper = 1 [(google.api.field_behavior) = REQUIRED];
     // Id of the article that should get deleted
-    string id = 2 [(google.api.field_behavior) = REQUIRED];
+    ID id = 1 [(google.api.field_behavior) = REQUIRED];
 }

@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	whopper "whopper/pkg/api/v1"
@@ -27,9 +28,11 @@ import (
 	"github.com/pkg/errors"
 	flag "github.com/spf13/pflag"
 
+	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -51,9 +54,14 @@ type DiscovererServerConfig struct {
 const ServiceName = "Discoverer"
 
 var (
-	cfg                 = DiscovererServerConfig{}
-	supportedNewspapers = whopperutil.TranslateNewspaperDefinitions(newsparser.GetSupportedNewspapers())
-	supportedParsers    = whopperutil.TranslateParserDefinitions(newsparser.GetAvailableParserIdentities())
+	cfg                   = DiscovererServerConfig{}
+	implementedNewspapers = newsparser.GetSupportedNewspapers()
+	implementedParsers    = newsparser.GetAvailableParserIdentities()
+
+	// supported*** represents collections that are available to look up
+	// essentially these types are used from the endpoint GetNewspapers to return all valid newspapers without leaking information from the implemented versions
+	SupportedNewspapers = []*whopper.Group{}
+	SupportedParsers    = []*whopper.Parser{}
 )
 
 func init() {
@@ -61,6 +69,18 @@ func init() {
 	flag.StringVar(&cfg.StateStore, "store", "statestore", "Statestore name that has been setup with dapr")
 	flag.StringVar(&cfg.LogLevel, "log-level", string(util.Info), fmt.Sprintf("Log level of the container, %s", util.WrapLogLevels))
 	flag.Parse()
+	// filter supported Newspapers from implemented newspaper
+	for _, newspaper := range implementedNewspapers {
+		SupportedNewspapers = append(SupportedNewspapers, &whopper.Group{
+			Name: newspaper.Name,
+		})
+	}
+	// filter supported parsers from implemented parsers
+	for _, parser := range implementedParsers {
+		SupportedParsers = append(SupportedParsers, &whopper.Parser{
+			Name: parser.Name,
+		})
+	}
 }
 
 func main() {
@@ -90,26 +110,59 @@ func main() {
 //
 // API HANDLERS
 //
-
+// Discover articles of the specified newspaper with the selected parser
 func (s *implementedDiscoveryServer) Discover(ctx context.Context, in *discoverer.DiscoverRequest) (*discoverer.DiscoverResponse, error) {
-	// run batch discovery
-	// unprocessedArticles, err := newsparser.BatchDiscovery(in.Newspaper)
-	// if err != nil {
-	// 	s.clients.Logger.Errorw("could not run batch discovery")
-	// 	return nil, err
-	// }
+	// check parser & check if the newspaper is supported & check if newspaper is supported
+	discovererArgs, err := verifyParserAndNewspaperInput(in.Newspaper, in.Parser)
+	if err != nil {
+		return &discoverer.DiscoverResponse{
+			Articles: nil,
+			Status: &whopper.Status{
+				Code:    code.Code_INVALID_ARGUMENT,
+				Message: "invalid input",
+			},
+		}, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
-	// get latest article for this newspaper:
-	// 	query db - filter desc created_at with limit 1
+	// discoveredArticles
+	resp := []*discoverer.DiscoveredArticle{}
+	for _, url := range discovererArgs.selectedNewspaper.LookupURLs {
+		discoveredArticles, err := runDiscoverArticleTexts(s.clients.PagserClient, *discovererArgs.implParser, url)
+		if err != nil {
+			return &discoverer.DiscoverResponse{
+				Articles: nil,
+				Status: &whopper.Status{
+					Code:    code.Code_CANCELLED,
+					Message: "articles could not be discovered",
+				},
+			}, status.Errorf(codes.Internal, fmt.Sprintf("%v", err))
+		}
 
-	// get discoverer parser for this article
-
-	// request website GET
-
-	// parse website
-
-	// store new articles in db
-	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+		// run this function to store a discovered article text to the state store
+		storedArticles, err := runStoreArticlesToStatestore(ctx, s.clients.DaprClient, discoveredArticles, in.Newspaper)
+		if err != nil {
+			marshalledData, err2 := json.Marshal(discoveredArticles)
+			if err2 != nil {
+				err = fmt.Errorf("err: %v and also could not marshal discoveredArticles err: %v", err, err2)
+			}
+			return &discoverer.DiscoverResponse{
+				Articles: nil,
+				Status: &whopper.Status{
+					Code:    code.Code_CANCELLED,
+					Message: "internal error storeing discovery results",
+					Details: []*anypb.Any{{Value: marshalledData}},
+				},
+			}, status.Errorf(codes.Internal, "%v", err)
+		}
+		resp = append(resp, storedArticles...)
+	}
+	return &discoverer.DiscoverResponse{
+		Articles: resp,
+		Status: &whopper.Status{
+			Code:    code.Code_OK,
+			Message: "articles successfully discovered",
+		},
+	}, nil
 }
 
 // List api handler to return discovered articles
@@ -125,7 +178,7 @@ func (s *implementedDiscoveryServer) List(ctx context.Context, in *discoverer.Li
 // Request a discovered article from the database
 func (s *implementedDiscoveryServer) Get(ctx context.Context, in *discoverer.GetDiscovererRequest) (*discoverer.DiscoveredArticle, error) {
 	// request state from dapr state storage
-	state, err := s.clients.DaprClient.GetState(ctx, s.config.StateStore, getKey(in.Id, in.Newspaper))
+	state, err := s.clients.DaprClient.GetState(ctx, s.config.StateStore, getKey(in.Id))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not request state resource")
 	}
@@ -139,21 +192,21 @@ func (s *implementedDiscoveryServer) Get(ctx context.Context, in *discoverer.Get
 // Return all newspapers that are valid to get requested
 func (s *implementedDiscoveryServer) GetNewspapers(ctx context.Context, in *emptypb.Empty) (*discoverer.GetNewspapersResponse, error) {
 	return &discoverer.GetNewspapersResponse{
-		Newspapers: supportedNewspapers,
+		Newspapers: SupportedNewspapers,
 	}, nil
 }
 
 // Return all newspapers that are valid to get requested
 func (s *implementedDiscoveryServer) GetParsers(context.Context, *emptypb.Empty) (*discoverer.GetParsersResponse, error) {
 	return &discoverer.GetParsersResponse{
-		Parsers: supportedParsers,
+		Parsers: SupportedParsers,
 	}, nil
 }
 
 // Update a discovered article in the database
 func (s *implementedDiscoveryServer) Update(ctx context.Context, in *discoverer.DiscoveredArticle) (*discoverer.DiscoveredArticle, error) {
 	// request record which should get updated
-	state, err := s.clients.DaprClient.GetState(ctx, s.config.StateStore, getKey(in.Id, in.Newspaper))
+	state, err := s.clients.DaprClient.GetState(ctx, s.config.StateStore, getKey(in.Id))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not request state resource")
 	}
@@ -187,7 +240,7 @@ func (s *implementedDiscoveryServer) Update(ctx context.Context, in *discoverer.
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("could not marshal updated object to bytes, err: %v", err))
 	}
 	// overwrite stored article with updated object
-	if err := s.clients.DaprClient.SaveState(ctx, s.config.StateStore, getKey(storedArticle.Id, storedArticle.Newspaper), marshalledUpdatedArticle); err != nil {
+	if err := s.clients.DaprClient.SaveState(ctx, s.config.StateStore, getKey(in.Id), marshalledUpdatedArticle); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("could not store updated object, err: %v", err))
 	}
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
@@ -195,7 +248,7 @@ func (s *implementedDiscoveryServer) Update(ctx context.Context, in *discoverer.
 
 // Delete a record on the statestore
 func (s *implementedDiscoveryServer) Delete(ctx context.Context, in *discoverer.DeleteDiscoveredArticleRequest) (*emptypb.Empty, error) {
-	if err := s.clients.DaprClient.DeleteState(ctx, s.config.StateStore, getKey(in.Id, in.Newspaper)); err != nil {
+	if err := s.clients.DaprClient.DeleteState(ctx, s.config.StateStore, getKey(in.Id)); err != nil {
 		return nil, status.Errorf(codes.NotFound, "could not find resource")
 	}
 	return &emptypb.Empty{}, nil
@@ -206,68 +259,6 @@ func (s *implementedDiscoveryServer) Delete(ctx context.Context, in *discoverer.
 //
 
 // this function defines database key formatting
-func getKey(id, newspaper string) string {
-	return fmt.Sprintf("disc-%s-%s", id, newspaper)
+func getKey(whopperID *whopper.ID) string {
+	return fmt.Sprintf("disc-%s-%s", whopperID.Id, whopperID.Group.Name)
 }
-
-// // BatchDiscovery used to run multiple concurrent website discoveries
-// func BatchDiscovery(discoveryBatch []*api.InDiscovererInfo) ([]*api.ArticleHead, error) {
-// 	p := pagser.New()
-// 	discoverBatch := func(done <-chan interface{}, in ...*api.InDiscovererInfo) <-chan newsparser.DiscoveryLookup {
-// 		chanLookups := make(chan newsparser.DiscoveryLookup)
-// 		go func() {
-// 			defer close(chanLookups)
-// 			for i := range in {
-// 				// get article parser by newspaper and run DiscoverArticles
-// 				discoveredArticleHeads := []*api.ArticleHead{}
-// 				parser, err := newsparser.GetNewspaperParser(newsparser.Newspaper(in[i].Newspaper))
-// 				// if no newspaper parser could be found the DiscoverArticle method will not get executed (skipped as it will error anyways)
-// 				if err == nil {
-// 					discoveredArticleHeads, err = parser.DiscoverArticles(p, func() (string, error) {
-// 						return GetWebsiteData(in[i].Url)
-// 					}, in[i].LatestId)
-// 				}
-// 				select {
-// 				case <-done:
-// 					return
-// 				case chanLookups <- newsparser.DiscoveryLookup{
-// 					Newspaper:   newsparser.Newspaper(in[i].Newspaper),
-// 					Error:       err,
-// 					ArticleHead: discoveredArticleHeads,
-// 				}:
-// 				}
-// 			}
-// 		}()
-// 		return chanLookups
-// 	}
-
-// 	done := make(chan interface{})
-// 	defer close(done)
-// 	discoveredArticles := []*api.ArticleHead{}
-// 	var err error
-
-// 	// Collect data from buffered channel
-// 	for lookups := range discoverBatch(done, discoveryBatch...) {
-// 		if lookups.Error != nil {
-// 			err = multierror.Append(err, errors.Wrapf(lookups.Error, "error discovering articles for newspaper %s", lookups.Newspaper))
-// 		} else {
-// 			discoveredArticles = append(discoveredArticles, lookups.ArticleHead...)
-// 		}
-// 	}
-// 	return discoveredArticles, err
-// }
-
-// // GetWebsiteData simple http get wrapper
-// func GetWebsiteData(webURL string) (string, error) {
-// 	resp, err := http.Get(strings.TrimSpace(webURL))
-// 	if err != nil {
-// 		return "", errors.Wrap(err, "could not perform http request with http.Get")
-// 	}
-// 	defer resp.Body.Close()
-
-// 	body, err := ioutil.ReadAll(resp.Body)
-// 	if err != nil {
-// 		return "", errors.Wrap(err, "could not read http response body with ioutil.ReadAll")
-// 	}
-// 	return string(body), nil
-// }

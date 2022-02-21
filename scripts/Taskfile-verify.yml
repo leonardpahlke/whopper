@@ -96,11 +96,7 @@ tasks:
       - go.mod
       - go.sum
 
-  check-golangci-lint:
-    cmds:
-      - ./scripts/verify/verify-golangci-lint.sh
-    sources:
-      - ./*.go
+  check-golangci-lint: ./scripts/verify/verify-golangci-lint.sh
 
   update-deps-go:
     cmds:

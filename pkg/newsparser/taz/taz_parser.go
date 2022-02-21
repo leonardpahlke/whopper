@@ -16,7 +16,6 @@ package taz
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"whopper/pkg/newsparser/models"
 
@@ -49,15 +48,10 @@ func (n NewsParserV1) GetIdentity() models.Parser {
 
 // DiscoverArticles used to scan taz newspaper category pages for articles
 // if all articles should get returned, set stopAtID to 0 or any ID which does not match
-func (n NewsParserV1) DiscoverArticles(p *pagser.Pagser, getWebsiteData func() (string, error), stopAtID int64) ([]*models.DiscoveredArticle, error) {
-	body, err := getWebsiteData()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get website data")
-	}
-
+func (n NewsParserV1) DiscoverArticles(p *pagser.Pagser, websiteRaw *[]byte, omitResultsAfterID string) ([]*models.DiscoveredArticle, error) {
 	// parse website data into a struct which contains information about how to parse the website
 	var data ArticleDiscovery
-	err = p.Parse(&data, body)
+	err := p.Parse(&data, string(*websiteRaw))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse taz article html data")
 	}
@@ -65,20 +59,20 @@ func (n NewsParserV1) DiscoverArticles(p *pagser.Pagser, getWebsiteData func() (
 	// transform taz specific data into a generic format
 	articleHeads := []*models.DiscoveredArticle{}
 	for _, e := range data.Articles {
-		if e.ID == stopAtID {
+		if e.ID == omitResultsAfterID {
 			// The website structures articles in order, this allows to break if the ID matches -- all articles after that have already been processed
 			break
 		}
-		if e.ID != 0 {
+		if e.ID != "" {
 			articleHeads = append(articleHeads, &models.DiscoveredArticle{
-				ID:          strconv.FormatInt(e.ID, 10),
+				ID:          e.ID,
 				URL:         e.URL,
 				ReleaseDate: e.Date,
 				Title:       e.Title,
 				Subtitle:    e.SubTitle,
 				Description: e.Description,
 				Category:    data.Category,
-				Newspaper:   "taz",
+				Newspaper:   Newspaper.Name,
 			})
 		}
 	}
@@ -105,7 +99,7 @@ type ArticleDiscovery struct {
 
 // ArticleDiscoveryEntry represents one of the articles which is listed on the article overview page
 type ArticleDiscoveryEntry struct {
-	ID          int64  `pagser:"meta[itemprop='cms-article-ID']->attr(content)"`
+	ID          string `pagser:"meta[itemprop='cms-article-ID']->attr(content)"`
 	URL         string `pagser:"a->AddTazURL()"`
 	Date        string `pagser:"li[class='date']->RemoveSpaces()"`
 	Title       string `pagser:"h3->text()"`

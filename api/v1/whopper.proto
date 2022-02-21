@@ -65,19 +65,20 @@ message Meta {
 
 // A newspaper website parser 
 message Parser {
-  // Name of the parser
   string name = 1;
-  // Version number of the parser
-  string version = 2;
-  // Newspapers that can be parsed by this parser
-  repeated Newspaper newspapers = 3;
 }
 
-// Newspaper type
-message Newspaper {
+// Group type
+message Group {
   string name = 1;
-  string base_url = 2;
-  repeated string lookup_urls = 3;
+}
+
+// Article ID type
+message ID {
+  // primary identifier of the website
+  string id = 1;
+  // secondary identifier since the ID might be only unique at group scope (group/newspaper)
+  Group group = 2;
 }
 
 
