@@ -126,8 +126,8 @@ func (s *implementedDiscoveryServer) Discover(ctx context.Context, in *discovere
 
 	// discoveredArticles
 	resp := []*discoverer.DiscoveredArticle{}
-	for _, url := range discovererArgs.selectedNewspaper.LookupURLs {
-		discoveredArticles, err := runDiscoverArticleTexts(s.clients.PagserClient, *discovererArgs.implParser, url)
+	for _, lookupPath := range discovererArgs.selectedNewspaper.LookupPaths {
+		discoveredArticles, err := runDiscoverArticleTexts(s.clients.PagserClient, *discovererArgs.implParser, fmt.Sprintf("%s/%s", discovererArgs.selectedNewspaper.BaseURL, lookupPath))
 		if err != nil {
 			return &discoverer.DiscoverResponse{
 				Articles: nil,

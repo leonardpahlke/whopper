@@ -29,9 +29,15 @@ import (
 //
 
 var Newspaper = models.Newspaper{
-	Name:       "taz",
-	BaseURL:    "https://taz.de",
-	LookupURLs: []string{}, // TODO: not sure about this one
+	Name:        "taz",
+	BaseURL:     "https://taz.de/",
+	LookupPaths: []string{"!t5204208", "!t5575293"}, // TODO: not sure about this one
+}
+
+var Parser = models.Parser{
+	Name:       fmt.Sprintf("%s-parser", Newspaper.Name),
+	Version:    "1.0",
+	Newspapers: []*models.Newspaper{&Newspaper},
 }
 
 // NewsParserV1 taz parser struct
@@ -76,7 +82,6 @@ func (n NewsParserV1) DiscoverArticles(p *pagser.Pagser, websiteRaw *[]byte, omi
 			})
 		}
 	}
-
 	return articleHeads, nil
 }
 
@@ -93,14 +98,14 @@ func (n NewsParserV1) ParseArticle(p *pagser.Pagser, articleText *string) (*stri
 
 // ArticleDiscovery represents the taz website overview
 type ArticleDiscovery struct {
-	Category string                  `pagser:"title->CleanTazCategory()"`
+	Category string                  `pagser:"title->CleanCategory()"`
 	Articles []ArticleDiscoveryEntry `pagser:"ul[role='directory'][class='news directory'] li"`
 }
 
 // ArticleDiscoveryEntry represents one of the articles which is listed on the article overview page
 type ArticleDiscoveryEntry struct {
 	ID          string `pagser:"meta[itemprop='cms-article-ID']->attr(content)"`
-	URL         string `pagser:"a->AddTazURL()"`
+	URL         string `pagser:"a->AddURL()"`
 	Date        string `pagser:"li[class='date']->RemoveSpaces()"`
 	Title       string `pagser:"h3->text()"`
 	SubTitle    string `pagser:"h4->text()"`

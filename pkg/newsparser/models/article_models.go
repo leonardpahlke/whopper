@@ -31,9 +31,9 @@ func (r *DiscoveredArticle) Marshal() ([]byte, error) {
 
 //-------------------------
 type Newspaper struct {
-	Name       string   `json:"name,omitempty"`
-	BaseURL    string   `json:"base_url,omitempty"`
-	LookupURLs []string `json:"lookup_urls,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	BaseURL     string   `json:"base_url,omitempty"`
+	LookupPaths []string `json:"lookup_urls,omitempty"`
 }
 
 func UnmarshalNewspaper(data []byte) (Newspaper, error) {
