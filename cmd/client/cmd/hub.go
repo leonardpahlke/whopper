@@ -34,7 +34,7 @@ var hubCmd = &cobra.Command{
 // hub client function
 func runHubClient(cfg *clientConfig) error {
 	cfg.logger.Infof("start client %s", whopperutil.WhopperControllerHub)
-	// TODO: client handler
+	// NOTE: client handler
 	return errors.New("not implemented yet")
 }
 

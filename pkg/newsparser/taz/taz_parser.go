@@ -31,7 +31,7 @@ import (
 var Newspaper = models.Newspaper{
 	Name:        "taz",
 	BaseURL:     "https://taz.de/",
-	LookupPaths: []string{"!t5204208", "!t5575293"}, // TODO: not sure about this one
+	LookupPaths: []string{"!t5204208", "!t5575293"}, // NOTE: not sure about this one
 }
 
 var Parser = models.Parser{

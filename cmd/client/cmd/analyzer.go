@@ -38,6 +38,6 @@ var analyzerCmd = &cobra.Command{
 // analyzer client function
 func runAnalyzerClient(cfg *clientConfig) error {
 	cfg.logger.Infof("start client %s", whopperutil.WhopperEngineAnalyzer)
-	// TODO: client handler
+	// client handler
 	return errors.New("not implemented yet")
 }

@@ -140,3 +140,8 @@ func runStoreArticlesToStatestore(ctx context.Context, daprClient dapr.Client, d
 	}
 	return storedArticles, nil
 }
+
+// this function defines database key formatting
+func getKey(whopperID *whopper.ID) string {
+	return fmt.Sprintf("disc-%s-%s", whopperID.Id, whopperID.Group.Name)
+}

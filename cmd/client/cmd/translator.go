@@ -38,6 +38,6 @@ var translatorCmd = &cobra.Command{
 // translator client function
 func runTranslatorClient(cfg *clientConfig) error {
 	cfg.logger.Infof("start client %s", whopperutil.WhopperEngineTranslator)
-	// TODO: client handler
+	// NOTE: client handler
 	return errors.New("not implemented yet")
 }

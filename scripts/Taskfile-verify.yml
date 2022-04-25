@@ -27,11 +27,16 @@ tasks:
       - task: install-whopper-ts
       - echo "Install libraries with npm used to build IaC with pulumi for the operator infrastructure"
       - task: install-operator-ts
+      - echo "Install golang"
+      - task: install-go
+
+  install-go:
+    cmds:
       - echo "Install and update golang dependencies"
       - task: update-deps-go
       - echo "Pull googleapi repository as it is getting used to build the whopper API"
       - task: pull-googleapi-language-proto
-      - echo "Compile gRPC Api code"
+      - echo "Compile gRPC API code"
       - task: compile-grpc
 
   install-whopper-ts:
@@ -130,3 +135,9 @@ tasks:
       - npm run lint -- --fix
     sources:
       - ./*.ts
+
+  # Verify GitHub Action with act (https://github.com/nektos/act)
+  act:
+    cmds:
+      - sudo systemctl start docker
+      - act

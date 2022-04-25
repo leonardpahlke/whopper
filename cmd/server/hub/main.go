@@ -74,6 +74,6 @@ func main() {}
 // // 1. Start Discoverer
 // // 2. Start Argo Workflow (article processing)
 // func (s implementedHubServer) RunHub(ctx context.Context, in *api.HubRequest) (*api.HubResponse, error) {
-// 	// TODO: implement RunHub
+// 	// NOTE: implement RunHub
 // 	return nil, errors.New("not implemented yet")
 // }

@@ -38,6 +38,6 @@ var parserCmd = &cobra.Command{
 // parser client function
 func runParserClient(cfg *clientConfig) error {
 	cfg.logger.Infof("start client %s", whopperutil.WhopperEngineParser)
-	// TODO: client handler
+	// NOTE: client handler
 	return errors.New("not implemented yet")
 }

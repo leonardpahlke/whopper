@@ -1,0 +1,59 @@
+name: Verify Code
+on: [push, pull_request]
+jobs:
+  go-verify:
+    name: Go Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+        id: go
+
+      - name: Get repo code
+        uses: actions/checkout@v2
+
+      - name: Install taskfile
+        run: go install github.com/go-task/task/v3/cmd/task@latest
+
+      - name: Install protoc
+        run: sudo apt-get install -y protobuf-compiler
+
+      - name: Install protobuf compiler & golang support
+        run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
+
+      - name: Install go code
+        run: task verify:install-go
+
+      - name: Verify go
+        run: task verify:go
+  ts-verify:
+    name: TS Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+        id: go
+
+      - name: Get repo code
+        uses: actions/checkout@v2
+
+      - name: Set up Node 14
+        uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+
+      - name: Install taskfile
+        run: go install github.com/go-task/task/v3/cmd/task@latest
+
+      - name: Install whopper node packages
+        run: task verify:install-whopper-ts
+
+      - name: Install operator node packages
+        run: task verify:install-operator-ts
+
+      - name: Verify typescript code
+        run: task verify:ts

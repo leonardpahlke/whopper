@@ -24,7 +24,7 @@ package cmd
 
 // func init() {
 // 	rootCmd.AddCommand(discovererCmd)
-// 	// TODO: add flags or something to update client request
+// 	// add flags or something to update client request
 // 	// discovererCmd.Flags().String("id", downloaderRequest.Id, "request identifier that is used")
 // 	// discovererCmd.Flags().String("url", downloaderRequest.Url, "article url which will be downloaded")
 // }
@@ -42,7 +42,7 @@ package cmd
 // func runDiscovererClient(cfg *clientConfig) error {
 // 	cfg.logger.Infof("start client %s", whopperutil.WhopperControllerDiscoverer)
 
-// 	// TODO: think about refactoring this part of the code
+// 	// think about refactoring this part of the code
 // 	// Set up a connection to the server.
 // 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", cfg.grpcHost, cfg.grpcPort), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 // 	if err != nil {
@@ -63,7 +63,7 @@ package cmd
 // 		return errors.Wrap(err, "could not perform a discover request")
 // 	}
 
-// 	// TODO: check head
+// 	// NOTE: check head
 
 // 	cfg.logger.Infow("received response", "message", r.Head.StatusMessage, "number of articles", len(r.Articles), "unprocessed articles", r.Articles)
 // 	return nil

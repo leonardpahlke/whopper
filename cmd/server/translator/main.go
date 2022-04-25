@@ -91,7 +91,7 @@ func main() {}
 // 			Head:           &api.Head{Status: api.Status_WARNING, StatusMessage: "translated text is equal to the original text", Timestamp: timestamppb.Now()},
 // 		}, nil
 // 	}
-// 	// TODO: check if article text should be stored in statestore, if not remove the dapr client
+// 	// NOTE: check if article text should be stored in statestore, if not remove the dapr client
 // 	return &api.TranslatorResponse{
 // 		Id:             in.Id,
 // 		TranslatedText: translatedText,

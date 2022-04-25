@@ -1,8 +1,6 @@
 # Whopper
 
-!!! Project under active development !!!
-
-Overview: ...
+**PROJECT ARCHIVED**
 
 ---
 
@@ -116,7 +114,7 @@ There are two different types of infrastructure deployments.
 operation
 
 ```bash
-TODO: ...
+...
 ```
 
 

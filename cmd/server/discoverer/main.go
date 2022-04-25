@@ -253,12 +253,3 @@ func (s *implementedDiscoveryServer) Delete(ctx context.Context, in *discoverer.
 	}
 	return &emptypb.Empty{}, nil
 }
-
-//
-// HELPER FUNCTIONS
-//
-
-// this function defines database key formatting
-func getKey(whopperID *whopper.ID) string {
-	return fmt.Sprintf("disc-%s-%s", whopperID.Id, whopperID.Group.Name)
-}

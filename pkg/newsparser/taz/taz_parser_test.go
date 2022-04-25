@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: write unit tests
+// NOTE: write unit tests
 // var tazDiscoveryData = []*whopper.InDiscovererInfo{{
 // 	Newspaper: "taz",
 // 	Url:       "https://taz.de/!t5204208/",
